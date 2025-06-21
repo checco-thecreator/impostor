@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostor Word</title>
+    <!-- Il CSS non cambia, lo lascio contratto per brevità -->
+    <style>@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');:root{--color-primary:#8e44ad;--color-secondary:#9b59b6;--color-text:#333;--color-light:#f9f9f9;--color-white:#ffffff;--border-radius:12px;--box-shadow:0 4px 15px rgba(0,0,0,0.1)}*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Poppins',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;background-color:#a0c4ff;color:var(--color-text);transition:background-color .5s ease}.container{width:90%;max-width:450px;background-color:var(--color-white);padding:30px 40px;border-radius:var(--border-radius);box-shadow:var(--box-shadow);text-align:center}.screen{display:none}.screen.active{display:block}h1{font-size:2.5rem;color:var(--color-primary);margin-bottom:20px}h2{font-size:1.8rem;color:var(--color-secondary);margin-bottom:25px}h3{margin-bottom:15px;color:#555}p{margin-bottom:15px}button{font-family:'Poppins',sans-serif;font-size:1rem;font-weight:600;padding:12px 20px;border-radius:var(--border-radius);border:none;cursor:pointer;width:100%;margin-top:10px;transition:transform .2s,background-color .2s}button:hover{transform:translateY(-2px)}.btn-primary{background-color:var(--color-primary);color:var(--color-white)}.btn-primary:hover{background-color:#7d3c98}.btn-secondary{background-color:var(--color-light);color:var(--color-primary);border:2px solid var(--color-primary)}.btn-secondary:hover{background-color:#f1e4f7}.btn-back{background:none;border:none;color:#888;font-size:.9rem;position:absolute;top:20px;left:20px;cursor:pointer;width:auto}.btn-back:hover{color:var(--color-primary);transform:none}.form-group{margin-bottom:15px;text-align:left}label{display:block;margin-bottom:5px;font-weight:600}input[type=text],input[type=number],select{width:100%;padding:12px;border:2px solid #ddd;border-radius:var(--border-radius);font-size:1rem}input:focus,select:focus{outline:none;border-color:var(--color-primary)}.card{background-color:var(--color-light);padding:20px;border-radius:var(--border-radius);margin-bottom:20px}.color-options{display:flex;justify-content:center;gap:15px;margin-top:20px}.color-swatch{width:50px;height:50px;border-radius:50%;border:3px solid var(--color-white);box-shadow:0 2px 5px rgba(0,0,0,0.1);cursor:pointer;transition:transform .2s}.color-swatch:hover{transform:scale(1.1)}#player-list{list-style:none;padding:0;margin-bottom:25px}#player-list li{background-color:var(--color-light);padding:10px;margin-bottom:8px;border-radius:8px;font-weight:600}.role-card{background-color:#f3e5f5;border:2px dashed var(--color-primary);padding:20px;border-radius:var(--border-radius);min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center}.secret-word{font-size:2.5rem;font-weight:700;color:var(--color-primary);margin:10px 0}</style>
+</head>
+<body>
+    <div class="container">
+        <!-- Schermata Iniziale -->
+        <div id="home-screen" class="screen active">
+            <h1>Impostor Word</h1>
+            <p>Raduna i tuoi amici e scopri chi è l'impostore!</p>
+            <button id="btn-go-to-play" class="btn-primary">Gioca</button>
+            <button id="btn-go-to-settings" class="btn-secondary">Impostazioni</button>
+        </div>
+
+        <!-- Schermata Gioca (Crea/Entra) -->
+        <div id="play-screen" class="screen">
+            <button class="btn-back" data-target="home-screen">← Home</button>
+            <h2>Entra in Partita</h2>
+            <!-- MODIFICA: Ho rimesso le opzioni per la lobby -->
+            <div class="card">
+                <h3>Crea una nuova Lobby</h3>
+                <div class="form-group"><input type="text" id="create-nickname" placeholder="Il tuo Nickname"></div>
+                <div class="form-group">
+                    <label for="num-players">Numero Max Giocatori</label>
+                    <select id="num-players">
+                        <option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="num-impostors">Numero Impostori</label>
+                    <select id="num-impostors">
+                        <option value="1" selected>1</option><option value="2">2</option>
+                    </select>
+                </div>
+                <button id="btn-create-lobby" class="btn-primary">Crea</button>
+            </div>
+            <div class="card">
+                <h3>Entra in una Lobby</h3>
+                <div class="form-group"><input type="text" id="join-code" placeholder="Codice Lobby"></div>
+                <div class="form-group"><input type="text" id="join-nickname" placeholder="Il tuo Nickname"></div>
+                <button id="btn-join-lobby" class="btn-secondary">Entra</button>
+            </div>
+        </div>
+
+        <!-- Altre schermate (impostazioni, lobby, ruolo) restano uguali nell'HTML -->
+        <div id="settings-screen" class="screen"><button class="btn-back" data-target="home-screen">← Home</button><h2>Impostazioni</h2><h3>Colore di Sfondo</h3><div class="color-options"><button class="color-swatch" data-color="#a0c4ff" style="background-color:#a0c4ff"></button><button class="color-swatch" data-color="#ffb3ba" style="background-color:#ffb3ba"></button><button class="color-swatch" data-color="#baffc9" style="background-color:#baffc9"></button><button class="color-swatch" data-color="#e1c3ff" style="background-color:#e1c3ff"></button><button class="color-swatch" data-color="#ffdfba" style="background-color:#ffdfba"></button></div></div>
+        <div id="lobby-screen" class="screen"><button class="btn-back" data-target="play-screen">← Esci</button><h2>Lobby: <span id="lobby-code-display"></span></h2><h3>Giocatori Connessi</h3><ul id="player-list"></ul><button id="btn-start-game" class="btn-primary">Inizia Partita</button></div>
+        <div id="role-screen" class="screen"><h2>Il tuo Ruolo</h2><div id="role-info" class="role-card"></div><button id="btn-new-game" class="btn-secondary">Nuova Partita</button></div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io();
+        let currentLobbyCode = null;
+
+        const screens = document.querySelectorAll('.screen');
+        const lobbyCodeDisplay = document.getElementById('lobby-code-display');
+        const playerList = document.getElementById('player-list');
+        const btnStartGame = document.getElementById('btn-start-game');
+        
+        const showScreen = (screenId) => {
+            screens.forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        };
+
+        const updatePlayerList = (players, hostId) => {
+            playerList.innerHTML = '';
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player.nickname;
+                if (player.id === hostId) {
+                    li.textContent += ' (Host)';
+                }
+                playerList.appendChild(li);
+            });
+            btnStartGame.style.display = (socket.id === hostId) ? 'block' : 'none';
+        };
+
+        // --- Logica di Comunicazione con il Server ---
+
+        document.getElementById('btn-create-lobby').addEventListener('click', () => {
+            const nickname = document.getElementById('create-nickname').value.trim();
+            // <-- MODIFICA: Leggiamo anche i valori delle impostazioni
+            const numPlayers = document.getElementById('num-players').value;
+            const numImpostors = document.getElementById('num-impostors').value;
+
+            if (nickname) {
+                // <-- MODIFICA: Inviamo i dati al server
+                socket.emit('createLobby', { nickname, numPlayers, numImpostors });
+            } else {
+                alert('Inserisci un nickname!');
+            }
+        });
+
+        document.getElementById('btn-join-lobby').addEventListener('click', () => {
+            const lobbyCode = document.getElementById('join-code').value.trim().toUpperCase();
+            const nickname = document.getElementById('join-nickname').value.trim();
+            if (nickname && lobbyCode) {
+                currentLobbyCode = lobbyCode; // <-- MODIFICA: Salviamo il codice qui quando ci uniamo
+                socket.emit('joinLobby', { lobbyCode, nickname });
+            } else {
+                alert('Inserisci nickname e codice lobby!');
+            }
+        });
+        
+        btnStartGame.addEventListener('click', () => {
+            if (currentLobbyCode) {
+                socket.emit('startGame', { lobbyCode: currentLobbyCode });
+            }
+        });
+
+        // --- GESTIONE DEGLI EVENTI RICEVUTI DAL SERVER ---
+
+        socket.on('lobbyCreated', (data) => {
+            currentLobbyCode = data.lobbyCode;
+            lobbyCodeDisplay.textContent = data.lobbyCode;
+            updatePlayerList(data.players, data.hostId);
+            showScreen('lobby-screen');
+        });
+        
+        // <-- MODIFICA: Ora riceviamo un oggetto 'data' invece di solo 'players'
+        socket.on('lobbyUpdate', (data) => {
+            updatePlayerList(data.players, data.hostId);
+            // Se non siamo ancora nella schermata lobby (es. siamo appena entrati), ci spostiamo
+            if (!document.getElementById('lobby-screen').classList.contains('active')) {
+                lobbyCodeDisplay.textContent = currentLobbyCode;
+                showScreen('lobby-screen');
+            }
+        });
+
+        socket.on('gameStarted', (data) => {
+            const roleInfo = document.getElementById('role-info');
+            if (data.role === 'impostor') {
+                roleInfo.innerHTML = `<h3>Sei l'Impostore!</h3><p>Non conosci la parola. Ascolta gli altri e cerca di indovinarla per mimetizzarti!</p>`;
+            } else {
+                roleInfo.innerHTML = `<h3>La parola segreta è:</h3><p class="secret-word">${data.word}</p><p>Descrivi la parola ai tuoi compagni senza dirla esplicitamente.</p>`;
+            }
+            showScreen('role-screen');
+        });
+
+        socket.on('errorMsg', (message) => {
+            alert(message);
+        });
+        
+        // --- Navigazione e Impostazioni (logica solo client) ---
+        const loadTheme = () => {const savedTheme = localStorage.getItem('impostorWordTheme');if (savedTheme) document.body.style.backgroundColor = savedTheme;};
+        document.getElementById('btn-go-to-play').addEventListener('click', () => showScreen('play-screen'));
+        document.getElementById('btn-go-to-settings').addEventListener('click', () => showScreen('settings-screen'));
+        document.querySelectorAll('.btn-back').forEach(b => b.addEventListener('click', () => { if(b.dataset.target === 'play-screen'){ socket.disconnect(); socket.connect();} showScreen(b.dataset.target)}));
+        document.getElementById('btn-new-game').addEventListener('click', () => {socket.disconnect(); socket.connect(); showScreen('home-screen')});
+        document.querySelectorAll('.color-swatch').forEach(sw => sw.addEventListener('click', () => {const color = sw.dataset.color;document.body.style.backgroundColor = color;localStorage.setItem('impostorWordTheme', color);}));
+        loadTheme();
+        showScreen('home-screen');
+    });
+    </script>
+</body>
+</html>
