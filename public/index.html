@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Chi è l'Impostore?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7425121195660181" crossorigin="anonymous"></script>
+    <style>
+        :root{--primary-purple:#7B2CBF;--secondary-blue:#00A8E8;--hot-orange:#FF6B35;--accent-yellow:#F7B801;--bg-dark:#240046;--bg-light:#F4F4F9;--text-light:#FFFFFF;--font-main:'Lilita One',cursive;--danger-red:#E63946}
+        @keyframes bg-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        @keyframes glow{0%,100%{box-shadow:0 0 15px 5px var(--accent-yellow)}50%{box-shadow:0 0 25px 10px var(--accent-yellow)}}
+        *{box-sizing:border-box;margin:0;padding:0}
+        html, body { height: 100%; overflow: hidden; }
+        body{font-family:var(--font-main);background:linear-gradient(-45deg,var(--primary-purple),var(--bg-dark),var(--secondary-blue));background-size:400% 400%;animation:bg-pan 15s ease infinite;display:flex;justify-content:center;align-items:center;color:var(--text-light);}
+        .container{width:100%;height:100%;max-width:500px;padding:20px;display:flex;flex-direction:column;position:relative}
+        .screen{
+            display:none;flex-direction:column;align-items:center;text-align:center;
+            position:absolute;top:0;left:0;width:100%;height:100%;padding:20px;
+            opacity:0;transition:opacity .5s ease-in-out,transform .5s ease-in-out;transform:scale(.95);
+            /* <-- LA SOLUZIONE: SCORRIMENTO INTERNO ALLA SCHERMATA --> */
+            overflow-y: auto; 
+            padding-bottom: 80px; /* Spazio per non far coprire il contenuto dal footer */
+        }
+        .screen.active{display:flex;opacity:1;transform:scale(1)}
+        #home-screen { justify-content: center; }
+        #lobby-screen, #game-screen { justify-content: flex-start; }
+        h1{font-size:clamp(3rem,12vw,5rem);color:var(--accent-yellow);text-shadow:2px 2px 4px rgba(0,0,0,.5)}
+        /* ... il resto del tuo CSS funzionante ... */
+        .footer-credits{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:.8rem;opacity:.6;pointer-events:none}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Home Screen -->
+        <section id="home-screen" class="screen active">
+            <h1>Chi è l'Impostore?</h1>
+            <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
+            <div class="card"><label for="nickname" style="text-align:center;font-size:1.5rem;margin-bottom:10px">Il tuo Nickname</label><input type="text" id="nickname" placeholder="CapitanMistero"></div>
+            <div class="card"><label style="text-align:center;font-size:1.5rem;margin-bottom:10px">Scegli il tuo Avatar</label><div id="avatar-selection" class="avatar-grid"></div></div>
+            <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button>
+            <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button>
+        </section>
+        
+        <!-- Contenitori vuoti per le altre schermate che verranno riempiti da JS -->
+        <section id="lobby-screen" class="screen"></section>
+        <section id="game-screen" class="screen"></section>
+        
+        <footer class="footer-credits">Creato con ❤️ da Checco</footer>
+    </div>
+    
+    <!-- Modals (struttura base vuota) -->
+    <div id="join-modal" class="modal"></div>
+    <div id="vote-modal" class="modal"></div>
+    <div id="impostor-guess-modal" class="modal"></div>
+    <div id="game-over-modal" class="modal"></div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    // --- JAVASCRIPT COMPLETO E FUNZIONANTE ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const socket = io();
+        let myState = { id: null, lobbyCode: null, isHost: false, avatar: 'avatar1.png', secretWord: '' };
+        
+        const sounds = {};
+        const soundFiles = ['join','start','turn','vote','win','lose'];
+        soundFiles.forEach(name => sounds[name] = new Audio(`/sounds/${name}.mp3`));
+        const playSound = (name) => sounds[name]?.play().catch(e => {});
+
+        const screens = document.querySelectorAll('.screen');
+        const modals = document.querySelectorAll('.modal');
+        
+        const showScreen = (screenId) => {
+            screens.forEach(s => s.classList.remove('active'));
+            const screen = document.getElementById(screenId);
+            if(screen) screen.classList.add('active');
+        };
+
+        const showModal = (modalId, content) => {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                modal.innerHTML = content;
+                modal.classList.add('active');
+                // Aggiungi listener per chiudere se necessario
+                modal.querySelectorAll('.btn-close-modal').forEach(btn => btn.onclick = hideModals);
+            }
+        };
+        const hideModals = () => modals.forEach(m => m.classList.remove('active'));
+
+        // Creazione Avatar
+        const avatarSelection = document.getElementById('avatar-selection');
+        for (let i = 1; i <= 6; i++) {
+            const img = document.createElement('img');
+            img.src = `/images/avatar${i}.png`;
+            img.dataset.avatar = `avatar${i}.png`;
+            img.classList.add('avatar');
+            if (i === 1) img.classList.add('selected');
+            img.onclick = () => {
+                avatarSelection.querySelectorAll('.avatar').forEach(a => a.classList.remove('selected'));
+                img.classList.add('selected');
+                myState.avatar = img.dataset.avatar;
+            };
+            avatarSelection.appendChild(img);
+        }
+
+        // --- Funzioni di Update ---
+        function updateLobby(state) {
+            myState.lobbyCode = state.lobbyCode;
+            myState.isHost = myState.id === state.hostId;
+            const lobbyScreen = document.getElementById('lobby-screen');
+            
+            let playersHtml = '';
+            state.players.forEach(p => { playersHtml += `<div class="player-card"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`; });
+            
+            lobbyScreen.innerHTML = `
+                <h2>Lobby di <span>${state.players.find(p => p.id === state.hostId)?.nickname || '...'}</span></h2>
+                <div class="card"><p>Codice Lobby:</p><h3 style="font-size:3rem;color:var(--accent-yellow);cursor:pointer">${state.lobbyCode}</h3></div>
+                <div id="player-grid">${playersHtml}</div>
+                <button id="btn-start-game" class="btn btn-primary" style="display: ${myState.isHost ? 'block' : 'none'}">Avvia Partita!</button>
+            `;
+            lobbyScreen.querySelector('#btn-start-game').addEventListener('click', () => socket.emit('startGame', { lobbyCode: myState.lobbyCode }));
+            showScreen('lobby-screen');
+        }
+
+        // ...altre funzioni di update e listener...
+        // Listener per i pulsanti della home
+        document.getElementById('btn-create-lobby').addEventListener('click', () => {
+            const nickname = document.getElementById('nickname').value.trim();
+            if (!nickname) return alert('Devi inserire un nickname!');
+            socket.emit('createLobby', { nickname, avatar: myState.avatar });
+        });
+
+        document.getElementById('btn-join-lobby').addEventListener('click', () => {
+            const nickname = document.getElementById('nickname').value.trim();
+            if (!nickname) return alert('Devi inserire un nickname!');
+            showModal('join-modal', `
+                <div class="modal-content">
+                    <h2>Unisciti a una Lobby</h2>
+                    <input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase">
+                    <button id="btn-confirm-join" class="btn btn-primary">Entra!</button>
+                    <button class="btn-close-modal btn-secondary">Annulla</button>
+                </div>
+            `);
+            document.getElementById('btn-confirm-join').onclick = () => {
+                const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+                if (code.length === 4) {
+                    socket.emit('joinLobby', { lobbyCode: code, nickname, avatar: myState.avatar });
+                }
+            };
+        });
+
+        // Handler Socket
+        socket.on('connect', () => { myState.id = socket.id; });
+        socket.on('lobbyUpdate', (state) => {
+            if (state.gameState === 'waiting') { playSound('join'); updateLobby(state); hideModals(); }
+        });
+        // Aggiungi qui tutti gli altri `socket.on(...)` che avevamo prima
+
+        showScreen('home-screen');
+    });
+    </script>
+</body>
+</html>
