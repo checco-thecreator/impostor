@@ -58,7 +58,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- HTML non cambia -->
+        <!-- L'HTML rimane invariato -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
@@ -131,14 +131,21 @@
                 showScreen('lobby-screen');
             }
 
+            // =================================================================
+            // FUNZIONE updateGame() CORRETTA - LA MODIFICA CHIAVE È QUI
+            // =================================================================
             function updateGame(state) {
                 const turnPlayer = state.players[state.turnIndex];
+                
+                // Aggiorna griglia giocatori
                 const gamePlayerGrid = document.getElementById('game-player-grid');
                 gamePlayerGrid.innerHTML = '';
                 state.players.forEach((p, index) => {
                     const isTurn = index === state.turnIndex;
                     gamePlayerGrid.innerHTML += `<div class="player-card ${isTurn ? 'is-turn' : ''}"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`;
                 });
+                
+                // Aggiorna lista indizi
                 const cluesContainer = document.getElementById('clues-container');
                 cluesContainer.innerHTML = '';
                 state.clues.forEach(clueData => {
@@ -146,19 +153,35 @@
                     cluesContainer.innerHTML += `<div class="clue"><img src="/images/${player.avatar}" class="avatar"><span class="clue-word">${clueData.clue}</span></div>`;
                 });
 
-                // NUOVA LOGICA DI VISUALIZZAZIONE TURNO - LA CORREZIONE CHIAVE È QUI
+                // Gestione dell'area di input e del testo del turno
                 const clueInputArea = document.getElementById('clue-input-area');
-                const hasGivenClue = state.clues.some(c => c.playerId === myState.id);
-                const isMyTurn = myState.id === turnPlayer.id;
-                const canGiveClue = isMyTurn && !hasGivenClue;
-                
-                clueInputArea.querySelector('h2').textContent = canGiveClue ? "È il tuo turno!" : `È il turno di ${turnPlayer.nickname}`;
-                clueInputArea.querySelector('input').style.display = canGiveClue ? 'block' : 'none';
-                clueInputArea.querySelector('button').style.display = canGiveClue ? 'block' : 'none';
+                const turnIndicator = clueInputArea.querySelector('h2');
+                const clueInput = clueInputArea.querySelector('input');
+                const clueButton = clueInputArea.querySelector('button');
 
-                if (canGiveClue) { playSound('turn'); }
+                const isMyTurn = myState.id === turnPlayer.id;
+                const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
+                
+                // La condizione per poter dare un indizio è:
+                // 1. È il mio turno (secondo il server)
+                // 2. Non ho ancora dato un indizio in questo round
+                const canGiveClue = isMyTurn && !iHaveGivenClue;
+
+                if (canGiveClue) {
+                    // Se posso giocare, mostro i miei controlli
+                    turnIndicator.textContent = "È il tuo turno!";
+                    clueInput.style.display = 'block';
+                    clueButton.style.display = 'block';
+                    playSound('turn');
+                } else {
+                    // Altrimenti, nascondo i miei controlli e mostro solo chi sta giocando
+                    turnIndicator.textContent = `È il turno di ${turnPlayer.nickname}`;
+                    clueInput.style.display = 'none';
+                    clueButton.style.display = 'none';
+                }
             }
             
+            // Listener e socket event (invariati)
             document.getElementById('btn-create-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar }); });
             document.getElementById('btn-join-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); showModal('join-modal'); });
             document.getElementById('btn-confirm-join').addEventListener('click', () => { const code = document.getElementById('join-code-input').value.trim().toUpperCase(); if (code.length === 4) { socket.emit('joinLobby', { lobbyCode: code, nickname: nicknameInput.value.trim(), avatar: myState.avatar }); } });
@@ -173,7 +196,6 @@
             document.getElementById('btn-play-again').addEventListener('click', () => socket.emit('playAgain', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-impostor-guess').addEventListener('click', () => showModal('impostor-guess-modal'));
             document.getElementById('btn-confirm-guess').addEventListener('click', () => { const guess = document.getElementById('impostor-guess-input').value.trim(); if(guess){ socket.emit('impostorGuess', { lobbyCode: myState.lobbyCode, guess }); } });
-
             socket.on('connect', () => { myState.id = socket.id; });
             socket.on('lobbyUpdate', (state) => { if (state.gameState === 'waiting') { playSound('join'); updateLobby(state); hideModals(); } });
             socket.on('gameStarted', ({ role, word }) => {
