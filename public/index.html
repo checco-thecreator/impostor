@@ -15,10 +15,7 @@
         @keyframes glow{0%,100%{box-shadow:0 0 15px 5px var(--accent-yellow)}50%{box-shadow:0 0 25px 10px var(--accent-yellow)}}
         *{box-sizing:border-box;margin:0;padding:0}
         
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
+        html, body { height: 100%; overflow: hidden; }
 
         body{
             font-family:var(--font-main);
@@ -53,9 +50,7 @@
             transform:scale(.95);
         }
         .screen.active{display:flex;opacity:1;transform:scale(1)}
-        #game-screen { 
-            justify-content: space-between;
-        }
+        #game-screen { justify-content: space-between; }
         .game-top, .game-bottom { width: 100%; }
 
         h1,h2,h3{text-shadow:2px 2px 4px rgba(0,0,0,.5)}
@@ -63,27 +58,9 @@
         h2{font-size:clamp(1.8rem, 8vw, 2.8rem);color:var(--text-light)}
         p{font-size:clamp(1rem, 4vw, 1.2rem);color:#ddd}
 
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            gap: 15px;
-            margin-top: 20px;
-        }
+        .button-group { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 15px; margin-top: 20px; }
 
-        .btn{
-            font-family:var(--font-main);
-            font-size:clamp(1.5rem, 5vw, 1.8rem);
-            padding:15px 25px;
-            border-radius:50px;
-            border:4px solid var(--bg-dark);
-            box-shadow:0 8px 0 var(--bg-dark);
-            cursor:pointer;
-            transition:all .1s ease-in-out;
-            width: 100%;
-            max-width:320px;
-        }
+        .btn{ font-family:var(--font-main); font-size:clamp(1.5rem, 5vw, 1.8rem); padding:15px 25px; border-radius:50px; border:4px solid var(--bg-dark); box-shadow:0 8px 0 var(--bg-dark); cursor:pointer; transition:all .1s ease-in-out; width: 100%; max-width:320px; }
         .btn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--bg-dark)}
         .btn-primary{background-color:var(--hot-orange);color:var(--text-light)}
         .btn-secondary{background-color:var(--secondary-blue);color:var(--text-light)}
@@ -99,8 +76,15 @@
         .avatar.selected{border-color:var(--accent-yellow);transform:scale(1.1)}
         
         #player-grid, #game-player-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:10px;width:100%;margin:15px 0}
-        .player-card{text-align:center}
-        .player-card .avatar{border-color:var(--secondary-blue);margin-bottom:5px;width:80px;height:80px;margin-left:auto;margin-right:auto;}
+        
+        /* MODIFICA: Risolve il problema di allineamento del nome */
+        .player-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .player-card .avatar{border-color:var(--secondary-blue);margin-bottom:5px;width:80px;height:80px;}
         .player-card .nickname{font-size:1rem;background:var(--bg-dark);padding:2px 8px;border-radius:10px;word-break:break-word;}
         .player-card.is-turn .avatar{animation:glow 1.5s infinite}
         
@@ -123,7 +107,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Home Screen -->
+        <!-- Schermate e Modals (HTML non cambia) -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
@@ -160,7 +144,6 @@
         </section>
     </div>
     
-    <!-- Modals -->
     <div id="join-modal" class="modal"><div class="modal-content"><h2>Unisciti a una Lobby</h2><input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase"><div class="button-group"><button id="btn-confirm-join" class="btn btn-primary">Entra!</button><button class="btn-close-modal btn-secondary">Annulla</button></div></div></div>
     <div id="vote-modal" class="modal"><div class="modal-content"><h2>🚨 È ORA DI VOTARE! 🚨</h2><p>Chi pensi sia l'Impostore?</p><div id="vote-grid"></div></div></div>
     <div id="impostor-guess-modal" class="modal"><div class="modal-content"><h2>Tenta il tutto per tutto!</h2><p>Scrivi la parola che pensi sia quella segreta. Se indovini, vinci! Altrimenti...</p><input type="text" id="impostor-guess-input" placeholder="La parola segreta è..."><div class="button-group"><button id="btn-confirm-guess" class="btn btn-danger">Conferma Ipotesi!</button><button class="btn-close-modal btn-secondary">Ci ho ripensato</button></div></div></div>
@@ -170,17 +153,16 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Lo script Javascript non necessita di modifiche questa volta
         document.addEventListener('DOMContentLoaded', () => {
             const socket = io();
             let myState = { id: null, lobbyCode: null, isHost: false, avatar: 'avatar1.png', secretWord: '' };
             
-            // Gestione audio
             const sounds = {};
             const soundFiles = ['join','start','turn','vote','win','lose'];
             soundFiles.forEach(name => sounds[name] = new Audio(`/sounds/${name}.mp3`));
             const playSound = (name) => sounds[name]?.play().catch(e => console.log("Audio play failed. User interaction needed."));
 
-            // Elementi UI
             const screens = document.querySelectorAll('.screen');
             const modals = document.querySelectorAll('.modal');
             const nicknameInput = document.getElementById('nickname');
@@ -251,7 +233,12 @@
 
                 clueInputArea.querySelector('input').style.display = canGiveClue ? 'block' : 'none';
                 clueInputArea.querySelector('button').style.display = canGiveClue ? 'block' : 'none';
-                if(isMyTurn) playSound('turn');
+                
+                if (isMyTurn && !canGiveClue) {
+                    clueInputArea.querySelector('h2').textContent = `È il turno di ${turnPlayer.nickname}`;
+                }
+
+                if (canGiveClue) playSound('turn');
             }
             
             document.getElementById('btn-create-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar }); });
