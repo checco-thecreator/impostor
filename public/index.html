@@ -16,8 +16,8 @@
         *{box-sizing:border-box;margin:0;padding:0}
         
         html, body {
-            height: 100%; /* Occupa tutta l'altezza */
-            overflow: hidden; /* Previene lo scroll a livello di body */
+            height: 100%;
+            overflow: hidden;
         }
 
         body{
@@ -26,7 +26,7 @@
             background-size:400% 400%;
             animation:bg-pan 15s ease infinite;
             display:flex;
-            flex-direction: column; /* Impila container e footer */
+            flex-direction: column;
             align-items:center;
             color:var(--text-light);
         }
@@ -36,9 +36,9 @@
             padding:20px;
             display:flex;
             flex-direction:column;
-            flex-grow: 1; /* Occupa lo spazio disponibile */
-            overflow-y: auto; /* Abilita lo scroll solo nel container */
-            -webkit-overflow-scrolling: touch; /* Scroll fluido su iOS */
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .screen{
             display:none;
@@ -47,15 +47,14 @@
             align-items:center;
             text-align:center;
             width:100%;
+            min-height: 100%;
             opacity:0;
             transition:opacity .5s ease-in-out,transform .5s ease-in-out;
             transform:scale(.95);
-            flex-shrink: 0; /* Impedisce agli screen di restringersi */
         }
         .screen.active{display:flex;opacity:1;transform:scale(1)}
         #game-screen { 
-            justify-content: space-between; /* Spinge gli elementi ai bordi */
-            height: 100%;
+            justify-content: space-between;
         }
         .game-top, .game-bottom { width: 100%; }
 
@@ -64,7 +63,27 @@
         h2{font-size:clamp(1.8rem, 8vw, 2.8rem);color:var(--text-light)}
         p{font-size:clamp(1rem, 4vw, 1.2rem);color:#ddd}
 
-        .btn{font-family:var(--font-main);font-size:clamp(1.5rem, 5vw, 1.8rem);padding:15px 25px;border-radius:50px;border:4px solid var(--bg-dark);box-shadow:0 8px 0 var(--bg-dark);cursor:pointer;transition:all .1s ease-in-out;margin-top:15px;width:100%;max-width:300px}
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn{
+            font-family:var(--font-main);
+            font-size:clamp(1.5rem, 5vw, 1.8rem);
+            padding:15px 25px;
+            border-radius:50px;
+            border:4px solid var(--bg-dark);
+            box-shadow:0 8px 0 var(--bg-dark);
+            cursor:pointer;
+            transition:all .1s ease-in-out;
+            width: 100%;
+            max-width:320px;
+        }
         .btn:active{transform:translateY(4px);box-shadow:0 4px 0 var(--bg-dark)}
         .btn-primary{background-color:var(--hot-orange);color:var(--text-light)}
         .btn-secondary{background-color:var(--secondary-blue);color:var(--text-light)}
@@ -93,9 +112,9 @@
         
         .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);display:none;justify-content:center;align-items:center;z-index:1000;opacity:0;transition:opacity .3s;padding:15px;}
         .modal.active{display:flex;opacity:1}
-        .modal-content{background:linear-gradient(135deg,var(--hot-orange),var(--primary-purple));border-radius:25px;border:4px solid var(--bg-dark);padding:20px;text-align:center;width:100%;max-width:450px; max-height: 95vh; overflow-y: auto;}
+        .modal-content{background:linear-gradient(135deg,var(--hot-orange),var(--primary-purple));border-radius:25px;border:4px solid var(--bg-dark);padding:20px;text-align:center;width:100%;max-width:450px; max-height: 95vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center;}
         
-        #vote-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:15px;margin-top:20px}
+        #vote-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:15px;margin-top:20px; width: 100%;}
         #vote-grid .player-card{cursor:pointer;transition:transform .2s}
         #vote-grid .player-card:hover{transform:scale(1.05)}
 
@@ -110,8 +129,10 @@
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
             <div class="card"><label for="nickname" style="text-align:center;font-size:1.5rem;margin-bottom:10px">Il tuo Nickname</label><input type="text" id="nickname" placeholder="CapitanMistero"></div>
             <div class="card"><label style="text-align:center;font-size:1.5rem;margin-bottom:10px">Scegli il tuo Avatar</label><div id="avatar-selection" class="avatar-grid"></div></div>
-            <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button>
-            <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button>
+            <div class="button-group">
+                <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button>
+                <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button>
+            </div>
         </section>
         
         <section id="lobby-screen" class="screen">
@@ -124,11 +145,15 @@
         <section id="game-screen" class="screen">
             <div class="game-top">
                 <div id="game-player-grid"></div>
-                <div class="card" id="word-card"><p>La tua parola segreta è:</p><h3 id="secret-word" style="font-size:2.5rem;color:var(--accent-yellow)">*****</h3></div>
+                <div class="card" id="word-card">
+                    <p id="word-card-label">La tua parola segreta è:</p>
+                    <h3 id="secret-word" style="font-size:2.5rem;color:var(--accent-yellow)">*****</h3>
+                    <p id="impostor-instructions" style="display:none; font-size: 1rem; margin-top: 10px;">Fai finta di conoscere la parola e non farti scoprire!</p>
+                </div>
             </div>
             <div id="clues-area"><div id="clues-container"></div></div>
-            <div class="game-bottom">
-                 <div class="card" id="clue-input-area"><h2 id="turn-indicator">È il turno di...</h2><input type="text" id="clue-input" placeholder="Scrivi un indizio..."><button id="btn-submit-clue" class="btn btn-secondary">Invia Indizio</button></div>
+            <div class="game-bottom button-group">
+                 <div class="card" id="clue-input-area" style="width: 100%; max-width: 320px;"><h2 id="turn-indicator">È il turno di...</h2><input type="text" id="clue-input" placeholder="Scrivi un indizio..."><button id="btn-submit-clue" class="btn btn-secondary">Invia Indizio</button></div>
                  <button id="btn-call-vote" class="btn btn-primary">Chiama la Votazione</button>
                  <button id="btn-impostor-guess" class="btn btn-danger" style="display:none">🚨 Tenta la Sorte! 🚨</button>
             </div>
@@ -136,9 +161,9 @@
     </div>
     
     <!-- Modals -->
-    <div id="join-modal" class="modal"><div class="modal-content"><h2>Unisciti a una Lobby</h2><input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase"><button id="btn-confirm-join" class="btn btn-primary">Entra!</button><button class="btn-close-modal btn-secondary">Annulla</button></div></div>
+    <div id="join-modal" class="modal"><div class="modal-content"><h2>Unisciti a una Lobby</h2><input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase"><div class="button-group"><button id="btn-confirm-join" class="btn btn-primary">Entra!</button><button class="btn-close-modal btn-secondary">Annulla</button></div></div></div>
     <div id="vote-modal" class="modal"><div class="modal-content"><h2>🚨 È ORA DI VOTARE! 🚨</h2><p>Chi pensi sia l'Impostore?</p><div id="vote-grid"></div></div></div>
-    <div id="impostor-guess-modal" class="modal"><div class="modal-content"><h2>Tenta il tutto per tutto!</h2><p>Scrivi la parola che pensi sia quella segreta. Se indovini, vinci! Altrimenti...</p><input type="text" id="impostor-guess-input" placeholder="La parola segreta è..."><button id="btn-confirm-guess" class="btn btn-danger">Conferma Ipotesi!</button><button class="btn-close-modal btn-secondary">Ci ho ripensato</button></div></div>
+    <div id="impostor-guess-modal" class="modal"><div class="modal-content"><h2>Tenta il tutto per tutto!</h2><p>Scrivi la parola che pensi sia quella segreta. Se indovini, vinci! Altrimenti...</p><input type="text" id="impostor-guess-input" placeholder="La parola segreta è..."><div class="button-group"><button id="btn-confirm-guess" class="btn btn-danger">Conferma Ipotesi!</button><button class="btn-close-modal btn-secondary">Ci ho ripensato</button></div></div></div>
     <div id="game-over-modal" class="modal"><div class="modal-content"><h2 id="game-over-title">PARTITA FINITA!</h2><div id="ejected-player-card" class="player-card" style="margin:20px auto;max-width:120px"></div><p id="game-over-reason" style="font-size:1.5rem"></p><p>La parola era: <strong id="reveal-word" style="color:var(--accent-yellow)"></strong></p><h3 id="game-over-winner" style="font-size:2.5rem"></h3><button id="btn-play-again" class="btn btn-primary">Gioca Ancora</button><ins class="adsbygoogle" style="display:block; margin-top: 20px;" data-ad-client="ca-pub-7425121195660181" data-ad-slot="IL_TUO_ID_SLOT_QUI" data-ad-format="auto" data-full-width-responsive="true"></ins></div></div>
     
     <footer class="footer-credits">Creato con ❤️ da Checco</footer>
@@ -176,7 +201,6 @@
             };
             const hideModals = () => modals.forEach(m => m.classList.remove('active'));
 
-            // Creazione griglia avatar
             for (let i = 1; i <= 6; i++) {
                 const img = document.createElement('img');
                 img.src = `/images/avatar${i}.png`;
@@ -191,7 +215,6 @@
                 avatarSelection.appendChild(img);
             }
 
-            // Funzioni di aggiornamento UI
             function updateLobby(state) {
                 myState.lobbyCode = state.lobbyCode;
                 myState.isHost = myState.id === state.hostId;
@@ -223,7 +246,6 @@
                 const isMyTurn = myState.id === turnPlayer.id;
                 const clueInputArea = document.getElementById('clue-input-area');
                 clueInputArea.querySelector('h2').textContent = isMyTurn ? "È il tuo turno!" : `È il turno di ${turnPlayer.nickname}`;
-                // Mostra input solo se è il mio turno E non ho ancora dato un indizio
                 const hasGivenClue = state.clues.some(c => c.playerId === myState.id);
                 const canGiveClue = isMyTurn && !hasGivenClue;
 
@@ -232,7 +254,6 @@
                 if(isMyTurn) playSound('turn');
             }
             
-            // Event Listeners
             document.getElementById('btn-create-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar }); });
             document.getElementById('btn-join-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); showModal('join-modal'); });
             document.getElementById('btn-confirm-join').addEventListener('click', () => { const code = document.getElementById('join-code-input').value.trim().toUpperCase(); if (code.length === 4) { socket.emit('joinLobby', { lobbyCode: code, nickname: nicknameInput.value.trim(), avatar: myState.avatar }); } });
@@ -249,22 +270,36 @@
             document.getElementById('btn-impostor-guess').addEventListener('click', () => showModal('impostor-guess-modal'));
             document.getElementById('btn-confirm-guess').addEventListener('click', () => { const guess = document.getElementById('impostor-guess-input').value.trim(); if(guess){ socket.emit('impostorGuess', { lobbyCode: myState.lobbyCode, guess }); } });
 
-            // Socket Events
             socket.on('connect', () => { myState.id = socket.id; });
             socket.on('lobbyUpdate', (state) => { if (state.gameState === 'waiting') { playSound('join'); updateLobby(state); hideModals(); } });
             socket.on('gameStarted', ({ role, word }) => {
                 playSound('start');
                 myState.secretWord = word || '';
-                document.getElementById('word-card').style.display = (role === 'player') ? 'block' : 'none';
-                document.getElementById('secret-word').textContent = word || 'SEI L\'IMPOSTORE!';
-                btnCallVote.style.display = 'block'; // Mostra il pulsante di voto
+                
+                const wordCardLabel = document.getElementById('word-card-label');
+                const secretWordEl = document.getElementById('secret-word');
+                const impostorInstructions = document.getElementById('impostor-instructions');
+
+                if (role === 'impostor') {
+                    wordCardLabel.textContent = "Il tuo ruolo è:";
+                    secretWordEl.textContent = "IMPOSTORE";
+                    secretWordEl.style.color = 'var(--danger-red)';
+                    impostorInstructions.style.display = 'block';
+                } else {
+                    wordCardLabel.textContent = "La tua parola segreta è:";
+                    secretWordEl.textContent = word;
+                    secretWordEl.style.color = 'var(--accent-yellow)';
+                    impostorInstructions.style.display = 'none';
+                }
+
+                btnCallVote.style.display = 'block';
                 document.getElementById('btn-impostor-guess').style.display = (role === 'impostor') ? 'block' : 'none';
                 showScreen('game-screen');
             });
             socket.on('turnUpdate', (state) => updateGame(state));
             socket.on('startVoting', (state) => {
                 playSound('vote');
-                btnCallVote.style.display = 'none'; // Nascondi quando inizia il voto
+                btnCallVote.style.display = 'none';
                 const voteGrid = document.getElementById('vote-grid');
                 voteGrid.innerHTML = '';
                 state.players.forEach(p => {
@@ -292,7 +327,6 @@
             });
             socket.on('errorMsg', ({ title, message }) => alert(`${title}\n${message}`));
             
-            // Inizializzazione
             showScreen('home-screen');
         });
     </script>
