@@ -54,20 +54,36 @@
         #vote-grid .player-card{cursor:pointer;transition:transform .2s}
         #vote-grid .player-card:hover{transform:scale(1.05)}
         .footer-credits { width: 100%; text-align: center; padding: 10px 0; font-size: 0.8rem; opacity: 0.6; color: var(--text-light); text-shadow: 1px 1px 2px var(--bg-dark); flex-shrink: 0; }
-        .settings-check { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 15px 0; }
+        
+        /* ============== NUOVO STILE PER LO SWITCH ANIMATO ============== */
+        .setting-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px; font-size: 1.2rem; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+        input:checked + .slider { background-color: var(--secondary-blue); }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
+        /* =============================================================== */
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- MODIFICATO: Aggiunta casella di controllo -->
+        <!-- MODIFICATO: Struttura HTML per lo switch animato -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
             <div class="card"><label for="nickname" style="text-align:center;font-size:1.5rem;margin-bottom:10px">Il tuo Nickname</label><input type="text" id="nickname" placeholder="CapitanMistero"></div>
             <div class="card"><label style="text-align:center;font-size:1.5rem;margin-bottom:10px">Scegli il tuo Avatar</label><div id="avatar-selection" class="avatar-grid"></div></div>
-            <div class="card settings-check">
-                <input type="checkbox" id="use-chat-checkbox" checked>
-                <label for="use-chat-checkbox">Usa Chat di Gioco</label>
+            <div class="card">
+                <div class="setting-row">
+                    <span>Usa Chat di Gioco</span>
+                    <label class="switch">
+                        <input type="checkbox" id="use-chat-checkbox" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
             <div class="button-group"> <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button> <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button> </div>
         </section>
@@ -79,7 +95,6 @@
             <button id="btn-start-game" class="btn btn-primary">Avvia Partita!</button>
         </section>
 
-        <!-- MODIFICATO: Aggiunto pulsante "Passa il Turno" -->
         <section id="game-screen" class="screen">
             <div class="game-top">
                 <div id="game-player-grid"></div>
@@ -108,6 +123,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // Lo script JavaScript rimane invariato, funzionerà con il nuovo switch
         document.addEventListener('DOMContentLoaded', () => {
             const socket = io();
             let myState = { id: null, lobbyCode: null, isHost: false, avatar: 'avatar1.png', secretWord: '' };
@@ -142,13 +158,8 @@
                 showScreen('lobby-screen');
             }
 
-            // =================================================================
-            // FUNZIONE updateGame() COMPLETAMENTE RISCRITTA
-            // =================================================================
             function updateGame(state) {
                 const turnPlayer = state.players[state.turnIndex];
-                
-                // Aggiorna griglia giocatori
                 const gamePlayerGrid = document.getElementById('game-player-grid');
                 gamePlayerGrid.innerHTML = '';
                 state.players.forEach((p, index) => {
@@ -156,7 +167,6 @@
                     gamePlayerGrid.innerHTML += `<div class="player-card ${isTurn ? 'is-turn' : ''}"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`;
                 });
                 
-                // Aggiorna lista indizi
                 const cluesContainer = document.getElementById('clues-container');
                 cluesContainer.innerHTML = '';
                 state.clues.forEach(clueData => {
@@ -164,20 +174,16 @@
                     cluesContainer.innerHTML += `<div class="clue"><img src="/images/${player.avatar}" class="avatar"><span class="clue-word">${clueData.clue}</span></div>`;
                 });
 
-                // Gestione dei pulsanti e degli input in base alla modalità di gioco
                 const clueInputArea = document.getElementById('clue-input-area');
                 const passTurnBtn = document.getElementById('btn-pass-turn');
                 const turnIndicator = document.getElementById('turn-indicator');
                 
                 const isMyTurn = myState.id === turnPlayer.id;
 
-                // Logica per modalità CHAT
                 if (state.settings.useChat) {
-                    passTurnBtn.style.display = 'none'; // Nasconde il pulsante "Passa Turno"
-                    
+                    passTurnBtn.style.display = 'none';
                     const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
                     const canGiveClue = isMyTurn && !iHaveGivenClue;
-
                     if(canGiveClue) {
                         clueInputArea.style.display = 'block';
                         turnIndicator.textContent = "È il tuo turno!";
@@ -185,10 +191,8 @@
                     } else {
                         clueInputArea.style.display = 'none';
                     }
-
-                // Logica per modalità "DAL VIVO"
                 } else {
-                    clueInputArea.style.display = 'none'; // Nasconde sempre l'input dell'indizio
+                    clueInputArea.style.display = 'none';
                     if (isMyTurn) {
                         passTurnBtn.style.display = 'block';
                         playSound('turn');
@@ -198,7 +202,6 @@
                 }
             }
             
-            // MODIFICATO: Invia le impostazioni quando si crea la lobby
             document.getElementById('btn-create-lobby').addEventListener('click', () => { 
                 if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!');
                 const useChat = document.getElementById('use-chat-checkbox').checked;
@@ -218,12 +221,7 @@
                 if (myState.secretWord && clue.toLowerCase().includes(myState.secretWord.toLowerCase())) { return alert("Non puoi scrivere la parola segreta come indizio!"); }
                 if (clue) { socket.emit('submitClue', { lobbyCode: myState.lobbyCode, clue }); clueInput.value = ''; }
             });
-            
-            // NUOVO LISTENER per il pulsante "Passa il Turno"
-            document.getElementById('btn-pass-turn').addEventListener('click', () => {
-                socket.emit('passTurn', { lobbyCode: myState.lobbyCode });
-            });
-
+            document.getElementById('btn-pass-turn').addEventListener('click', () => { socket.emit('passTurn', { lobbyCode: myState.lobbyCode }); });
             btnCallVote.addEventListener('click', () => socket.emit('callVote', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-play-again').addEventListener('click', () => socket.emit('playAgain', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-impostor-guess').addEventListener('click', () => showModal('impostor-guess-modal'));
