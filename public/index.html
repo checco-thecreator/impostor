@@ -54,24 +54,32 @@
         #vote-grid .player-card{cursor:pointer;transition:transform .2s}
         #vote-grid .player-card:hover{transform:scale(1.05)}
         .footer-credits { width: 100%; text-align: center; padding: 10px 0; font-size: 0.8rem; opacity: 0.6; color: var(--text-light); text-shadow: 1px 1px 2px var(--bg-dark); flex-shrink: 0; }
+        .settings-check { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 15px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- L'HTML rimane invariato -->
+        <!-- MODIFICATO: Aggiunta casella di controllo -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
             <div class="card"><label for="nickname" style="text-align:center;font-size:1.5rem;margin-bottom:10px">Il tuo Nickname</label><input type="text" id="nickname" placeholder="CapitanMistero"></div>
             <div class="card"><label style="text-align:center;font-size:1.5rem;margin-bottom:10px">Scegli il tuo Avatar</label><div id="avatar-selection" class="avatar-grid"></div></div>
+            <div class="card settings-check">
+                <input type="checkbox" id="use-chat-checkbox" checked>
+                <label for="use-chat-checkbox">Usa Chat di Gioco</label>
+            </div>
             <div class="button-group"> <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button> <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button> </div>
         </section>
+
         <section id="lobby-screen" class="screen">
             <h2>Lobby di <span id="host-name"></span></h2>
             <div class="card"><p>Codice Lobby:</p><h3 id="lobby-code" style="font-size:3rem;color:var(--accent-yellow);cursor:pointer">CODE</h3></div>
             <div id="player-grid"></div>
             <button id="btn-start-game" class="btn btn-primary">Avvia Partita!</button>
         </section>
+
+        <!-- MODIFICATO: Aggiunto pulsante "Passa il Turno" -->
         <section id="game-screen" class="screen">
             <div class="game-top">
                 <div id="game-player-grid"></div>
@@ -83,16 +91,19 @@
             </div>
             <div id="clues-area"><div id="clues-container"></div></div>
             <div class="game-bottom button-group">
-                 <div class="card" id="clue-input-area" style="width: 100%; max-width: 320px;"><h2 id="turn-indicator">È il turno di...</h2><input type="text" id="clue-input" placeholder="Scrivi un indizio..."><button id="btn-submit-clue" class="btn btn-secondary">Invia Indizio</button></div>
+                 <div class="card" id="clue-input-area" style="width: 100%; max-width: 320px; display: none;"><h2 id="turn-indicator">È il turno di...</h2><input type="text" id="clue-input" placeholder="Scrivi un indizio..."><button id="btn-submit-clue" class="btn btn-secondary">Invia Indizio</button></div>
+                 <button id="btn-pass-turn" class="btn btn-secondary" style="display:none;">Passa il Turno</button>
                  <button id="btn-call-vote" class="btn btn-primary">Chiama la Votazione</button>
                  <button id="btn-impostor-guess" class="btn btn-danger" style="display:none">🚨 Tenta la Sorte! 🚨</button>
             </div>
         </section>
     </div>
+    
     <div id="join-modal" class="modal"><div class="modal-content"><h2>Unisciti a una Lobby</h2><input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase"><div class="button-group"><button id="btn-confirm-join" class="btn btn-primary">Entra!</button><button class="btn-close-modal btn-secondary">Annulla</button></div></div></div>
     <div id="vote-modal" class="modal"><div class="modal-content"><h2>🚨 È ORA DI VOTARE! 🚨</h2><p>Chi pensi sia l'Impostore?</p><div id="vote-grid"></div></div></div>
     <div id="impostor-guess-modal" class="modal"><div class="modal-content"><h2>Tenta il tutto per tutto!</h2><p>Scrivi la parola che pensi sia quella segreta. Se indovini, vinci! Altrimenti...</p><input type="text" id="impostor-guess-input" placeholder="La parola segreta è..."><div class="button-group"><button id="btn-confirm-guess" class="btn btn-danger">Conferma Ipotesi!</button><button class="btn-close-modal btn-secondary">Ci ho ripensato</button></div></div></div>
     <div id="game-over-modal" class="modal"><div class="modal-content"><h2 id="game-over-title">PARTITA FINITA!</h2><div id="ejected-player-card" class="player-card" style="margin:20px auto;max-width:120px"></div><p id="game-over-reason" style="font-size:1.5rem"></p><p>La parola era: <strong id="reveal-word" style="color:var(--accent-yellow)"></strong></p><h3 id="game-over-winner" style="font-size:2.5rem"></h3><button id="btn-play-again" class="btn btn-primary">Gioca Ancora</button><ins class="adsbygoogle" style="display:block; margin-top: 20px;" data-ad-client="ca-pub-7425121195660181" data-ad-slot="IL_TUO_ID_SLOT_QUI" data-ad-format="auto" data-full-width-responsive="true"></ins></div></div>
+    
     <footer class="footer-credits">Creato con ❤️ da Checco</footer>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -132,7 +143,7 @@
             }
 
             // =================================================================
-            // FUNZIONE updateGame() CORRETTA - LA MODIFICA CHIAVE È QUI
+            // FUNZIONE updateGame() COMPLETAMENTE RISCRITTA
             // =================================================================
             function updateGame(state) {
                 const turnPlayer = state.players[state.turnIndex];
@@ -153,36 +164,51 @@
                     cluesContainer.innerHTML += `<div class="clue"><img src="/images/${player.avatar}" class="avatar"><span class="clue-word">${clueData.clue}</span></div>`;
                 });
 
-                // Gestione dell'area di input e del testo del turno
+                // Gestione dei pulsanti e degli input in base alla modalità di gioco
                 const clueInputArea = document.getElementById('clue-input-area');
-                const turnIndicator = clueInputArea.querySelector('h2');
-                const clueInput = clueInputArea.querySelector('input');
-                const clueButton = clueInputArea.querySelector('button');
-
-                const isMyTurn = myState.id === turnPlayer.id;
-                const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
+                const passTurnBtn = document.getElementById('btn-pass-turn');
+                const turnIndicator = document.getElementById('turn-indicator');
                 
-                // La condizione per poter dare un indizio è:
-                // 1. È il mio turno (secondo il server)
-                // 2. Non ho ancora dato un indizio in questo round
-                const canGiveClue = isMyTurn && !iHaveGivenClue;
+                const isMyTurn = myState.id === turnPlayer.id;
 
-                if (canGiveClue) {
-                    // Se posso giocare, mostro i miei controlli
-                    turnIndicator.textContent = "È il tuo turno!";
-                    clueInput.style.display = 'block';
-                    clueButton.style.display = 'block';
-                    playSound('turn');
+                // Logica per modalità CHAT
+                if (state.settings.useChat) {
+                    passTurnBtn.style.display = 'none'; // Nasconde il pulsante "Passa Turno"
+                    
+                    const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
+                    const canGiveClue = isMyTurn && !iHaveGivenClue;
+
+                    if(canGiveClue) {
+                        clueInputArea.style.display = 'block';
+                        turnIndicator.textContent = "È il tuo turno!";
+                        playSound('turn');
+                    } else {
+                        clueInputArea.style.display = 'none';
+                    }
+
+                // Logica per modalità "DAL VIVO"
                 } else {
-                    // Altrimenti, nascondo i miei controlli e mostro solo chi sta giocando
-                    turnIndicator.textContent = `È il turno di ${turnPlayer.nickname}`;
-                    clueInput.style.display = 'none';
-                    clueButton.style.display = 'none';
+                    clueInputArea.style.display = 'none'; // Nasconde sempre l'input dell'indizio
+                    if (isMyTurn) {
+                        passTurnBtn.style.display = 'block';
+                        playSound('turn');
+                    } else {
+                        passTurnBtn.style.display = 'none';
+                    }
                 }
             }
             
-            // Listener e socket event (invariati)
-            document.getElementById('btn-create-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar }); });
+            // MODIFICATO: Invia le impostazioni quando si crea la lobby
+            document.getElementById('btn-create-lobby').addEventListener('click', () => { 
+                if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!');
+                const useChat = document.getElementById('use-chat-checkbox').checked;
+                socket.emit('createLobby', { 
+                    nickname: nicknameInput.value.trim(), 
+                    avatar: myState.avatar,
+                    settings: { useChat: useChat, numImpostors: 1 } 
+                }); 
+            });
+
             document.getElementById('btn-join-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); showModal('join-modal'); });
             document.getElementById('btn-confirm-join').addEventListener('click', () => { const code = document.getElementById('join-code-input').value.trim().toUpperCase(); if (code.length === 4) { socket.emit('joinLobby', { lobbyCode: code, nickname: nicknameInput.value.trim(), avatar: myState.avatar }); } });
             document.querySelectorAll('.btn-close-modal').forEach(btn => btn.onclick = hideModals);
@@ -192,6 +218,12 @@
                 if (myState.secretWord && clue.toLowerCase().includes(myState.secretWord.toLowerCase())) { return alert("Non puoi scrivere la parola segreta come indizio!"); }
                 if (clue) { socket.emit('submitClue', { lobbyCode: myState.lobbyCode, clue }); clueInput.value = ''; }
             });
+            
+            // NUOVO LISTENER per il pulsante "Passa il Turno"
+            document.getElementById('btn-pass-turn').addEventListener('click', () => {
+                socket.emit('passTurn', { lobbyCode: myState.lobbyCode });
+            });
+
             btnCallVote.addEventListener('click', () => socket.emit('callVote', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-play-again').addEventListener('click', () => socket.emit('playAgain', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-impostor-guess').addEventListener('click', () => showModal('impostor-guess-modal'));
