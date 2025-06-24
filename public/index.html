@@ -54,8 +54,6 @@
         #vote-grid .player-card{cursor:pointer;transition:transform .2s}
         #vote-grid .player-card:hover{transform:scale(1.05)}
         .footer-credits { width: 100%; text-align: center; padding: 10px 0; font-size: 0.8rem; opacity: 0.6; color: var(--text-light); text-shadow: 1px 1px 2px var(--bg-dark); flex-shrink: 0; }
-        
-        /* ============== NUOVO STILE PER LO SWITCH ANIMATO ============== */
         .setting-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px; font-size: 1.2rem; }
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -65,12 +63,10 @@
         input:checked + .slider:before { transform: translateX(26px); }
         .slider.round { border-radius: 34px; }
         .slider.round:before { border-radius: 50%; }
-        /* =============================================================== */
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- MODIFICATO: Struttura HTML per lo switch animato -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
@@ -106,7 +102,12 @@
             </div>
             <div id="clues-area"><div id="clues-container"></div></div>
             <div class="game-bottom button-group">
-                 <div class="card" id="clue-input-area" style="width: 100%; max-width: 320px; display: none;"><h2 id="turn-indicator">È il turno di...</h2><input type="text" id="clue-input" placeholder="Scrivi un indizio..."><button id="btn-submit-clue" class="btn btn-secondary">Invia Indizio</button></div>
+                 <!-- MODIFICATO: Cambiato l'ID per maggiore chiarezza -->
+                 <div class="card" id="turn-actions-card" style="width: 100%; max-width: 320px;">
+                    <h2 id="turn-indicator-text">È il turno di...</h2>
+                    <input type="text" id="clue-input" placeholder="Scrivi un indizio..." style="display: none;">
+                    <button id="btn-submit-clue" class="btn btn-secondary" style="display: none;">Invia Indizio</button>
+                 </div>
                  <button id="btn-pass-turn" class="btn btn-secondary" style="display:none;">Passa il Turno</button>
                  <button id="btn-call-vote" class="btn btn-primary">Chiama la Votazione</button>
                  <button id="btn-impostor-guess" class="btn btn-danger" style="display:none">🚨 Tenta la Sorte! 🚨</button>
@@ -123,7 +124,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Lo script JavaScript rimane invariato, funzionerà con il nuovo switch
         document.addEventListener('DOMContentLoaded', () => {
             const socket = io();
             let myState = { id: null, lobbyCode: null, isHost: false, avatar: 'avatar1.png', secretWord: '' };
@@ -158,8 +158,12 @@
                 showScreen('lobby-screen');
             }
 
+            // =================================================================
+            // FUNZIONE updateGame() CON LA LOGICA PER IL MESSAGGIO FINALE
+            // =================================================================
             function updateGame(state) {
                 const turnPlayer = state.players[state.turnIndex];
+                
                 const gamePlayerGrid = document.getElementById('game-player-grid');
                 gamePlayerGrid.innerHTML = '';
                 state.players.forEach((p, index) => {
@@ -174,30 +178,43 @@
                     cluesContainer.innerHTML += `<div class="clue"><img src="/images/${player.avatar}" class="avatar"><span class="clue-word">${clueData.clue}</span></div>`;
                 });
 
-                const clueInputArea = document.getElementById('clue-input-area');
+                // Elementi dell'interfaccia di turno
+                const turnActionsCard = document.getElementById('turn-actions-card');
+                const turnIndicatorText = document.getElementById('turn-indicator-text');
+                const clueInput = document.getElementById('clue-input');
+                const submitClueBtn = document.getElementById('btn-submit-clue');
                 const passTurnBtn = document.getElementById('btn-pass-turn');
-                const turnIndicator = document.getElementById('turn-indicator');
-                
-                const isMyTurn = myState.id === turnPlayer.id;
 
-                if (state.settings.useChat) {
-                    passTurnBtn.style.display = 'none';
-                    const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
-                    const canGiveClue = isMyTurn && !iHaveGivenClue;
-                    if(canGiveClue) {
-                        clueInputArea.style.display = 'block';
-                        turnIndicator.textContent = "È il tuo turno!";
-                        playSound('turn');
-                    } else {
-                        clueInputArea.style.display = 'none';
-                    }
+                const isMyTurn = myState.id === turnPlayer.id;
+                const allCluesGiven = state.clues.length >= state.players.length;
+
+                // Nascondiamo tutto di default per sicurezza
+                turnActionsCard.style.display = 'none';
+                passTurnBtn.style.display = 'none';
+                clueInput.style.display = 'none';
+                submitClueBtn.style.display = 'none';
+
+                if (allCluesGiven) {
+                    // CASO 1: Tutti hanno parlato. Mostra il messaggio per votare.
+                    turnActionsCard.style.display = 'block';
+                    turnIndicatorText.textContent = "Tutti hanno parlato! Ora votate!";
                 } else {
-                    clueInputArea.style.display = 'none';
-                    if (isMyTurn) {
-                        passTurnBtn.style.display = 'block';
-                        playSound('turn');
-                    } else {
-                        passTurnBtn.style.display = 'none';
+                    // CASO 2: Il gioco è ancora in corso.
+                    if (state.settings.useChat) {
+                        const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
+                        const canGiveClue = isMyTurn && !iHaveGivenClue;
+                        if(canGiveClue) {
+                            turnActionsCard.style.display = 'block';
+                            turnIndicatorText.textContent = "È il tuo turno!";
+                            clueInput.style.display = 'block';
+                            submitClueBtn.style.display = 'block';
+                            playSound('turn');
+                        }
+                    } else { // Modalità "dal vivo"
+                        if (isMyTurn) {
+                            passTurnBtn.style.display = 'block';
+                            playSound('turn');
+                        }
                     }
                 }
             }
@@ -205,11 +222,7 @@
             document.getElementById('btn-create-lobby').addEventListener('click', () => { 
                 if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!');
                 const useChat = document.getElementById('use-chat-checkbox').checked;
-                socket.emit('createLobby', { 
-                    nickname: nicknameInput.value.trim(), 
-                    avatar: myState.avatar,
-                    settings: { useChat: useChat, numImpostors: 1 } 
-                }); 
+                socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar, settings: { useChat: useChat, numImpostors: 1 } }); 
             });
 
             document.getElementById('btn-join-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); showModal('join-modal'); });
