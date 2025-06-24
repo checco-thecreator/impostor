@@ -10,9 +10,28 @@ const PORT = process.env.PORT || 3000;
 const wordList = [ "Letto", "Sedia", "Tavolo", "Armadio", "Lampada", "Specchio", "Tappeto", "Scopa", "Forno", "Frigorifero", "Divano", "Scrivania", "Sveglia", "Appendiabiti", "Tenda", "Cuscino", "Libreria", "Vaso", "Orologio", "Forchetta", "Coltello", "Cucchiaio", "Piatto", "Bicchiere", "Tazza", "Padella", "Pentola", "Lavatrice", "Asciugamano", "Sapone", "Mela", "Banana", "Formaggio", "Pane", "Latte", "Carota", "Pomodoro", "Gelato", "Caffè", "Acqua", "Succo", "Olio", "Sale", "Pepe", "Pasta", "Pizza", "Riso", "Pollo", "Pesce", "Uovo", "Biscotto", "Cioccolato", "Limone", "Arancia", "Patata", "Cipolla", "Aglio", "Insalata", "Torta", "Vino", "Cane", "Gatto", "Cavallo", "Mucca", "Pecora", "Gallo", "Tigre", "Leone", "Giraffa", "Scimmia", "Elefante", "Balena", "Squalo", "Delfino", "Pinguino", "Farfalla", "Ragno", "Ape", "Formica", "Serpente", "Aquila", "Gufo", "Coccodrillo", "Ippopotamo", "Zebra", "Orso", "Lupo", "Volpe", "Scoiattolo", "Pipistrello", "Medico", "Pompiere", "Poliziotto", "Insegnante", "Cuoco", "Pittore", "Attore", "Cantante", "Elettricista", "Meccanico", "Pilota", "Scuola", "Ospedale", "Supermercato", "Parco", "Museo", "Banca", "Ufficio Postale", "Ristorante", "Aeroporto", "Stazione", "Biblioteca", "Teatro", "Cinema", "Spiaggia", "Farmacia", "Negozio", "Hotel", "Chiesa", "Piazza", "Albero", "Fiore", "Fiume", "Montagna", "Nuvola", "Pioggia", "Neve", "Stella", "Luna", "Sole", "Deserto", "Isola", "Vulcano", "Foresta", "Cascata", "Lago", "Mare", "Cielo", "Pietra", "Sabbia", "Mano", "Piede", "Occhio", "Naso", "Bocca", "Orecchio", "Capelli", "Dito", "Gamba", "Braccio", "Scarpa", "Maglietta", "Pantaloni", "Cappello", "Giacca", "Guanto", "Sciarpa", "Calzino", "Camicia", "Gonna", "Telefono", "Computer", "Tablet", "Televisione", "Fotocamera", "Cuffie", "Microfono", "Tastiera", "Mouse", "Stampante", "Libro", "Film", "Musica", "Videogioco", "Chitarra", "Pianoforte", "Calcio", "Pallacanestro", "Bicicletta", "Auto", "Amore", "Odio", "Tempo", "Spazio", "Idea", "Sogno", "Paura", "Gioia", "Tristezza", "Fortuna", "Destino", "Libertà", "Giustizia", "Pace", "Caos", "Memoria", "Pensiero", "Silenzio", "Energia", "Anima", "Nuoto", "Corsa", "Sci", "Tennis", "Pallavolo", "Yoga", "Danza", "Arrampicata", "Pugilato", "Scacchi", "Meditazione", "Pesca", "Giardinaggio", "Cucina", "Lettura", "Scherma", "Golf", "Surf", "Ciclismo", "Bowling", "Pirata", "Astronauta", "Scienziato", "Detective", "Supereroe", "Re", "Regina", "Mago", "Fantasma", "Alieno", "Cowboy", "Ninja", "Zombi", "Vampiro", "Robot", "Gladiatore", "Esploratore", "Giudice", "Presidente", "Spia", "Violino", "Batteria", "Flauto", "Tromba", "Sassofono", "Arpa", "Pennello", "Tela", "Scultura", "Statua", "Mosaico", "Affresco", "Poesia", "Romanzo", "Spartito", "Basso", "Ukulele", "Tamburo", "Argilla", "Acquerello", "Terremoto", "Tsunami", "Uragano", "Tornado", "Arcobaleno", "Aurora", "Eclissi", "Meteora", "Fulmine", "Grandine", "Nebbia", "Marea", "Eruzione", "Tramonto", "Alba", "Stalattite", "Ghiacciaio", "Geyser", "Cratere", "Duna", "Sottomarino", "Elicottero", "Mongolfiera", "Dirigibile", "Treno a vapore", "Monopattino", "Skateboard", "Trattore", "Ambulanza", "Camion dei pompieri", "Limousine", "Yacht", "Jet-ski", "Deltaplano", "Funivia", "Roulotte", "Risciò", "Sidecar", "Traghetto", "Canoa", "Piramide", "Grattacielo", "Ponte", "Diga", "Faro", "Mulino a vento", "Castello", "Cattedrale", "Igloo", "Palafitta", "Acquedotto", "Anfiteatro", "Labirinto", "Metropolitana", "Osservatorio", "Granaio", "Fabbrica", "Capanna", "Bunker", "Santuario"];
 let lobbies = {};
 
+// FUNZIONE CENTRALE A PROVA DI ERRORE PER L'AVANZAMENTO DEL TURNO
+function advanceTurn(lobby) {
+    if (lobby.clues.length >= lobby.players.length) {
+        // Tutti hanno dato un indizio, il turno non avanza più.
+        return;
+    }
+    
+    const playersWhoGaveClues = new Set(lobby.clues.map(c => c.playerId));
+    let nextTurnIndex = lobby.turnIndex;
+
+    // Cerca il prossimo giocatore in cerchio che non ha ancora dato un indizio
+    do {
+        nextTurnIndex = (nextTurnIndex + 1) % lobby.players.length;
+    } while (playersWhoGaveClues.has(lobby.players[nextTurnIndex].id));
+    
+    lobby.turnIndex = nextTurnIndex;
+}
+
 function getLobbyState(lobbyCode) {
     const lobby = lobbies[lobbyCode];
     if (!lobby) return null;
+    // Invia anche le impostazioni della lobby al client
     return { lobbyCode, players: lobby.players, hostId: lobby.hostId, gameState: lobby.gameState, settings: lobby.settings, turnIndex: lobby.turnIndex, clues: lobby.clues, word: (lobby.gameState !== 'playing' && lobby.gameState !== 'voting') ? lobby.word : null };
 }
 
@@ -21,10 +40,11 @@ function resetLobby(lobby) {
 }
 
 io.on('connection', (socket) => {
-    socket.on('createLobby', ({ nickname, avatar }) => {
+    // MODIFICATO: Accetta le impostazioni della lobby
+    socket.on('createLobby', ({ nickname, avatar, settings }) => {
         let lobbyCode;
         do { lobbyCode = Math.random().toString(36).substring(2, 6).toUpperCase(); } while (lobbies[lobbyCode]);
-        lobbies[lobbyCode] = { players: [], hostId: socket.id, settings: { numImpostors: 1 } };
+        lobbies[lobbyCode] = { players: [], hostId: socket.id, settings: settings || { useChat: true, numImpostors: 1 } };
         resetLobby(lobbies[lobbyCode]);
         socket.join(lobbyCode);
         lobbies[lobbyCode].players.push({ id: socket.id, nickname, avatar });
@@ -61,22 +81,22 @@ io.on('connection', (socket) => {
     
     socket.on('submitClue', ({ lobbyCode, clue }) => {
         const lobby = lobbies[lobbyCode];
-        if (!lobby || lobby.gameState !== 'playing' || socket.id !== lobby.players[lobby.turnIndex].id) return;
-        if (clue.trim().toLowerCase() === lobby.word.trim().toLowerCase()) { console.log(`Bloccato indizio illegale da ${socket.id}: era la parola segreta.`); return; }
+        if (!lobby || lobby.gameState !== 'playing' || socket.id !== lobby.players[lobby.turnIndex].id || !lobby.settings.useChat) return;
+        if (clue.trim().toLowerCase() === lobby.word.trim().toLowerCase()) { return; }
 
         lobby.clues.push({ playerId: socket.id, clue });
+        advanceTurn(lobby);
+        io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
+    });
 
-        // NUOVA LOGICA DI AVANZAMENTO TURNO - LA CORREZIONE CHIAVE È QUI
-        if (lobby.clues.length < lobby.players.length) {
-            const playersWhoGaveClues = new Set(lobby.clues.map(c => c.playerId));
-            let nextTurnIndex = lobby.turnIndex;
-            do {
-                nextTurnIndex = (nextTurnIndex + 1) % lobby.players.length;
-            } while (playersWhoGaveClues.has(lobby.players[nextTurnIndex].id));
-            lobby.turnIndex = nextTurnIndex;
-        }
-        // Se tutti hanno dato l'indizio, il turnIndex non avanza più. Il gioco attende il voto.
+    // NUOVO EVENTO: Per la modalità di gioco "dal vivo"
+    socket.on('passTurn', ({ lobbyCode }) => {
+        const lobby = lobbies[lobbyCode];
+        if (!lobby || lobby.gameState !== 'playing' || socket.id !== lobby.players[lobby.turnIndex].id || lobby.settings.useChat) return;
 
+        // Aggiungiamo un "indizio" fittizio solo per contare che il giocatore ha agito.
+        lobby.clues.push({ playerId: socket.id, clue: 'Sta pensando...' });
+        advanceTurn(lobby);
         io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
     });
 
