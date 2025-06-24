@@ -21,8 +21,7 @@ function getLobbyState(lobbyCode) {
         gameState: lobby.gameState,
         settings: lobby.settings,
         turnIndex: lobby.turnIndex,
-        clues: lobby.clues,
-        word: (lobby.gameState !== 'playing' && lobby.gameState !== 'voting') ? lobby.word : null
+        // Rimosso clues e word (inviato solo alla fine)
     };
 }
 
@@ -31,7 +30,6 @@ function resetLobby(lobby) {
     lobby.word = '';
     lobby.impostorIds = new Set();
     lobby.turnIndex = 0;
-    lobby.clues = [];
     lobby.votes = {};
     lobby.players.forEach(p => p.isReady = false);
 }
@@ -74,6 +72,9 @@ io.on('connection', (socket) => {
             lobby.impostorIds.add(playersCopy.splice(randomIndex, 1)[0].id);
         }
         
+        // Scegli un giocatore casuale per iniziare
+        lobby.turnIndex = Math.floor(Math.random() * lobby.players.length);
+
         lobby.players.forEach(player => {
             const isImpostor = lobby.impostorIds.has(player.id);
             io.to(player.id).emit('gameStarted', {
@@ -84,26 +85,26 @@ io.on('connection', (socket) => {
         io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
     });
 
-    socket.on('submitClue', ({ lobbyCode, clue }) => {
+    // MODIFICA: Nuovo evento per passare il turno
+    socket.on('passTurn', ({ lobbyCode }) => {
         const lobby = lobbies[lobbyCode];
         if (!lobby || lobby.gameState !== 'playing' || socket.id !== lobby.players[lobby.turnIndex].id) return;
-
-        // <-- MODIFICA: Controllo di sicurezza lato server -->
-        if (clue.trim().toLowerCase() === lobby.word.trim().toLowerCase()) {
-            console.log(`Bloccato indizio illegale da ${socket.id}: era la parola segreta.`);
-            return; // Ignora silenziosamente l'indizio
-        }
-
-        lobby.clues.push({ playerId: socket.id, clue });
-        lobby.turnIndex++;
-
-        if (lobby.turnIndex >= lobby.players.length) {
-            lobby.gameState = 'voting';
-            io.to(lobbyCode).emit('startVoting', getLobbyState(lobbyCode));
-        } else {
-            io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
-        }
+        
+        // Passa al giocatore successivo, tornando all'inizio se necessario
+        lobby.turnIndex = (lobby.turnIndex + 1) % lobby.players.length;
+        
+        io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
     });
+
+    // MODIFICA: Nuovo evento per iniziare la votazione
+    socket.on('requestVoting', ({ lobbyCode }) => {
+        const lobby = lobbies[lobbyCode];
+        if (!lobby || lobby.gameState !== 'playing') return;
+
+        lobby.gameState = 'voting';
+        io.to(lobbyCode).emit('startVoting', getLobbyState(lobbyCode));
+    });
+
 
     socket.on('playerVote', ({ lobbyCode, votedPlayerId }) => {
         const lobby = lobbies[lobbyCode];
@@ -112,9 +113,15 @@ io.on('connection', (socket) => {
         lobby.votes[socket.id] = votedPlayerId;
         const voteCount = Object.keys(lobby.votes).length;
 
-        if (voteCount === lobby.players.length) {
+        // Anti-auto-voto: l'ultimo giocatore non può votare se stesso, quindi il conteggio non arriverà mai a `players.length` se c'è un solo giocatore rimasto da votare
+        const nonVoters = lobby.players.filter(p => !Object.keys(lobby.votes).includes(p.id));
+        const possibleTargets = lobby.players.filter(p => p.id !== nonVoters[0]?.id).map(p => p.id);
+        const allVotesInForPossibleTargets = Object.values(lobby.votes).every(votedId => possibleTargets.includes(votedId));
+
+        if (voteCount >= lobby.players.filter(p => p.id !== votedPlayerId).length && allVotesInForPossibleTargets) {
             const tally = {};
             Object.values(lobby.votes).forEach(vote => { tally[vote] = (tally[vote] || 0) + 1; });
+            // Gestione parità: al momento vince il primo incontrato. Si può migliorare in futuro.
             const ejectedPlayerId = Object.keys(tally).reduce((a, b) => tally[a] > tally[b] ? a : b, Object.keys(tally)[0]);
             const ejectedPlayer = lobby.players.find(p => p.id === ejectedPlayerId);
             const wasImpostor = lobby.impostorIds.has(ejectedPlayerId);
@@ -126,7 +133,7 @@ io.on('connection', (socket) => {
                 result = { winner: 'Impostori', reason: `Avete eliminato un innocente: ${ejectedPlayer.nickname}!` };
             }
             lobby.gameState = 'ended';
-            io.to(lobbyCode).emit('gameOver', { ejectedPlayer, wasImpostor, result, word: lobby.word, impostors: lobby.players.filter(p => lobby.impostorIds.has(p.id)) });
+            io.to(lobbyCode).emit('gameOver', { ejectedPlayer, result, word: lobby.word });
         }
     });
 
@@ -144,7 +151,7 @@ io.on('connection', (socket) => {
         }
         
         lobby.gameState = 'ended';
-        io.to(lobbyCode).emit('gameOver', { ejectedPlayer: player, wasImpostor: true, result, word: lobby.word, impostors: lobby.players.filter(p => lobby.impostorIds.has(p.id)) });
+        io.to(lobbyCode).emit('gameOver', { ejectedPlayer: player, result, word: lobby.word });
     });
 
     socket.on('playAgain', ({ lobbyCode }) => {
@@ -154,7 +161,11 @@ io.on('connection', (socket) => {
         io.to(lobbyCode).emit('lobbyUpdate', getLobbyState(lobbyCode));
     });
 
-    // Handle disconnections...
+    socket.on('disconnect', () => {
+        // Logica di disconnessione (complessa, per ora la omettiamo ma sarebbe da implementare)
+        // Bisognerebbe trovare la lobby del giocatore, rimuoverlo, e gestire i casi critici 
+        // (es. l'host si disconnette, il giocatore di turno si disconnette, etc.)
+    });
 });
 
 app.use(express.static('public'));
