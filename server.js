@@ -9,7 +9,6 @@ const io = socketIo(server);
 const PORT = process.env.PORT || 3000;
 // La tua lista di parole rimane invariata
 const wordList = [ "Letto", "Sedia", "Tavolo", "Armadio", "Lampada", "Specchio", "Tappeto", "Scopa", "Forno", "Frigorifero", "Divano", "Scrivania", "Sveglia", "Appendiabiti", "Tenda", "Cuscino", "Libreria", "Vaso", "Orologio", "Forchetta", "Coltello", "Cucchiaio", "Piatto", "Bicchiere", "Tazza", "Padella", "Pentola", "Lavatrice", "Asciugamano", "Sapone", "Mela", "Banana", "Formaggio", "Pane", "Latte", "Carota", "Pomodoro", "Gelato", "Caffè", "Acqua", "Succo", "Olio", "Sale", "Pepe", "Pasta", "Pizza", "Riso", "Pollo", "Pesce", "Uovo", "Biscotto", "Cioccolato", "Limone", "Arancia", "Patata", "Cipolla", "Aglio", "Insalata", "Torta", "Vino", "Cane", "Gatto", "Cavallo", "Mucca", "Pecora", "Gallo", "Tigre", "Leone", "Giraffa", "Scimmia", "Elefante", "Balena", "Squalo", "Delfino", "Pinguino", "Farfalla", "Ragno", "Ape", "Formica", "Serpente", "Aquila", "Gufo", "Coccodrillo", "Ippopotamo", "Zebra", "Orso", "Lupo", "Volpe", "Scoiattolo", "Pipistrello", "Medico", "Pompiere", "Poliziotto", "Insegnante", "Cuoco", "Pittore", "Attore", "Cantante", "Elettricista", "Meccanico", "Pilota", "Scuola", "Ospedale", "Supermercato", "Parco", "Museo", "Banca", "Ufficio Postale", "Ristorante", "Aeroporto", "Stazione", "Biblioteca", "Teatro", "Cinema", "Spiaggia", "Farmacia", "Negozio", "Hotel", "Chiesa", "Piazza", "Albero", "Fiore", "Fiume", "Montagna", "Nuvola", "Pioggia", "Neve", "Stella", "Luna", "Sole", "Deserto", "Isola", "Vulcano", "Foresta", "Cascata", "Lago", "Mare", "Cielo", "Pietra", "Sabbia", "Mano", "Piede", "Occhio", "Naso", "Bocca", "Orecchio", "Capelli", "Dito", "Gamba", "Braccio", "Scarpa", "Maglietta", "Pantaloni", "Cappello", "Giacca", "Guanto", "Sciarpa", "Calzino", "Camicia", "Gonna", "Telefono", "Computer", "Tablet", "Televisione", "Fotocamera", "Cuffie", "Microfono", "Tastiera", "Mouse", "Stampante", "Libro", "Film", "Musica", "Videogioco", "Chitarra", "Pianoforte", "Calcio", "Pallacanestro", "Bicicletta", "Auto", "Amore", "Odio", "Tempo", "Spazio", "Idea", "Sogno", "Paura", "Gioia", "Tristezza", "Fortuna", "Destino", "Libertà", "Giustizia", "Pace", "Caos", "Memoria", "Pensiero", "Silenzio", "Energia", "Anima", "Nuoto", "Corsa", "Sci", "Tennis", "Pallavolo", "Yoga", "Danza", "Arrampicata", "Pugilato", "Scacchi", "Meditazione", "Pesca", "Giardinaggio", "Cucina", "Lettura", "Scherma", "Golf", "Surf", "Ciclismo", "Bowling", "Pirata", "Astronauta", "Scienziato", "Detective", "Supereroe", "Re", "Regina", "Mago", "Fantasma", "Alieno", "Cowboy", "Ninja", "Zombi", "Vampiro", "Robot", "Gladiatore", "Esploratore", "Giudice", "Presidente", "Spia", "Violino", "Batteria", "Flauto", "Tromba", "Sassofono", "Arpa", "Pennello", "Tela", "Scultura", "Statua", "Mosaico", "Affresco", "Poesia", "Romanzo", "Spartito", "Basso", "Ukulele", "Tamburo", "Argilla", "Acquerello", "Terremoto", "Tsunami", "Uragano", "Tornado", "Arcobaleno", "Aurora", "Eclissi", "Meteora", "Fulmine", "Grandine", "Nebbia", "Marea", "Eruzione", "Tramonto", "Alba", "Stalattite", "Ghiacciaio", "Geyser", "Cratere", "Duna", "Sottomarino", "Elicottero", "Mongolfiera", "Dirigibile", "Treno a vapore", "Monopattino", "Skateboard", "Trattore", "Ambulanza", "Camion dei pompieri", "Limousine", "Yacht", "Jet-ski", "Deltaplano", "Funivia", "Roulotte", "Risciò", "Sidecar", "Traghetto", "Canoa", "Piramide", "Grattacielo", "Ponte", "Diga", "Faro", "Mulino a vento", "Castello", "Cattedrale", "Igloo", "Palafitta", "Acquedotto", "Anfiteatro", "Labirinto", "Metropolitana", "Osservatorio", "Granaio", "Fabbrica", "Capanna", "Bunker", "Santuario"];
-
 let lobbies = {};
 
 function getLobbyState(lobbyCode) {
@@ -38,6 +37,7 @@ function resetLobby(lobby) {
 }
 
 io.on('connection', (socket) => {
+    // ... (createLobby, joinLobby, startGame non cambiano) ...
     socket.on('createLobby', ({ nickname, avatar }) => {
         let lobbyCode;
         do { lobbyCode = Math.random().toString(36).substring(2, 6).toUpperCase(); } while (lobbies[lobbyCode]);
@@ -84,7 +84,7 @@ io.on('connection', (socket) => {
         });
         io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
     });
-
+    
     socket.on('submitClue', ({ lobbyCode, clue }) => {
         const lobby = lobbies[lobbyCode];
         if (!lobby || lobby.gameState !== 'playing' || socket.id !== lobby.players[lobby.turnIndex].id) return;
@@ -96,21 +96,16 @@ io.on('connection', (socket) => {
 
         lobby.clues.push({ playerId: socket.id, clue });
         
-        // Passa al prossimo turno, ma non avviare la votazione automaticamente
-        if(lobby.turnIndex < lobby.players.length - 1){
-            lobby.turnIndex++;
-        } else {
-            // Se era l'ultimo giocatore, il turno rimane "bloccato".
-            // La partita ora attende che qualcuno chiami la votazione.
-        }
+        // MODIFICA: Risolve il bug del gioco bloccato.
+        // Fa avanzare sempre il turno, tornando al primo giocatore se necessario (rotazione).
+        lobby.turnIndex = (lobby.turnIndex + 1) % lobby.players.length;
 
         io.to(lobbyCode).emit('turnUpdate', getLobbyState(lobbyCode));
     });
 
-    // <-- NUOVO EVENTO: per chiamare la votazione manualmente -->
+    // ... (callVote, playerVote, impostorGuess, playAgain, etc. non cambiano) ...
     socket.on('callVote', ({ lobbyCode }) => {
         const lobby = lobbies[lobbyCode];
-        // Chiunque può chiamare il voto se la partita è in corso
         if (!lobby || lobby.gameState !== 'playing') return;
 
         lobby.gameState = 'voting';
@@ -164,12 +159,6 @@ io.on('connection', (socket) => {
         if (!lobby || socket.id !== lobby.hostId) return;
         resetLobby(lobby);
         io.to(lobbyCode).emit('lobbyUpdate', getLobbyState(lobbyCode));
-    });
-
-    // Gestione disconnessioni (semplificata)
-    socket.on('disconnect', () => {
-        // Logica di disconnessione (da implementare se necessario)
-        console.log('User disconnected:', socket.id);
     });
 });
 
