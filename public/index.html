@@ -12,7 +12,6 @@
     <style>
         :root{--primary-purple:#7B2CBF;--secondary-blue:#00A8E8;--hot-orange:#FF6B35;--accent-yellow:#F7B801;--bg-dark:#240046;--bg-light:#F4F4F9;--text-light:#FFFFFF;--font-main:'Lilita One',cursive;--danger-red:#E63946}
         @keyframes bg-pan{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-        @keyframes glow{0%,100%{box-shadow:0 0 15px 5px var(--accent-yellow)}50%{box-shadow:0 0 25px 10px var(--accent-yellow)}}
         *{box-sizing:border-box;margin:0;padding:0}
         html, body { height: 100%; overflow: hidden; }
         body{font-family:var(--font-main);background:linear-gradient(-45deg,var(--primary-purple),var(--bg-dark),var(--secondary-blue));background-size:400% 400%;animation:bg-pan 15s ease infinite;display:flex;flex-direction: column;align-items:center;color:var(--text-light);}
@@ -41,46 +40,28 @@
         .player-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
         .player-card .avatar{border-color:var(--secondary-blue);margin-bottom:5px;width:80px;height:80px;}
         .player-card .nickname{font-size:1rem;background:var(--bg-dark);padding:2px 8px;border-radius:10px;word-break:break-word;}
-        .player-card.is-turn .avatar{animation:glow 1.5s infinite}
         #clues-area{width:100%;flex-grow:1;background:rgba(0,0,0,.3);border-radius:15px;padding:10px;margin:15px 0;overflow-y:auto;display:flex;flex-direction:column-reverse;min-height: 150px; max-height: 40vh;}
         #clues-container { display: flex; flex-direction: column; }
         .clue{display:flex;align-items:center;margin-top:10px;background:rgba(0,0,0,.2);padding:5px 10px;border-radius:10px;animation:fadeIn .3s}
         .clue .avatar{width:30px;height:30px;margin-right:10px;border:none;flex-shrink:0}
         .clue-word{font-size:clamp(1.2rem, 5vw, 1.5rem);color:var(--accent-yellow); word-break: break-word;}
+        #chat-input-area { display: flex; gap: 10px; width: 100%; max-width: 380px; margin-top: 15px; }
+        #chat-input-area input { flex-grow: 1; }
         .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);display:none;justify-content:center;align-items:center;z-index:1000;opacity:0;transition:opacity .3s;padding:15px;}
         .modal.active{display:flex;opacity:1}
         .modal-content{background:linear-gradient(135deg,var(--hot-orange),var(--primary-purple));border-radius:25px;border:4px solid var(--bg-dark);padding:20px;text-align:center;width:100%;max-width:450px; max-height: 95vh; overflow-y: auto; display: flex; flex-direction: column; align-items: center;}
         #vote-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));gap:15px;margin-top:20px; width: 100%;}
-        #vote-grid .player-card{cursor:pointer;transition:transform .2s}
-        #vote-grid .player-card:hover{transform:scale(1.05)}
         .footer-credits { width: 100%; text-align: center; padding: 10px 0; font-size: 0.8rem; opacity: 0.6; color: var(--text-light); text-shadow: 1px 1px 2px var(--bg-dark); flex-shrink: 0; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px; font-size: 1.2rem; }
-        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; }
-        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
-        input:checked + .slider { background-color: var(--secondary-blue); }
-        input:checked + .slider:before { transform: translateX(26px); }
-        .slider.round { border-radius: 34px; }
-        .slider.round:before { border-radius: 50%; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Interfaccia semplificata: rimossa opzione per la chat -->
         <section id="home-screen" class="screen active">
             <h1>Chi è l'Impostore?</h1>
             <p>🕵️‍♂️ Raduna i tuoi amici e scopri il bugiardo! 🔍</p>
             <div class="card"><label for="nickname" style="text-align:center;font-size:1.5rem;margin-bottom:10px">Il tuo Nickname</label><input type="text" id="nickname" placeholder="CapitanMistero"></div>
             <div class="card"><label style="text-align:center;font-size:1.5rem;margin-bottom:10px">Scegli il tuo Avatar</label><div id="avatar-selection" class="avatar-grid"></div></div>
-            <div class="card">
-                <div class="setting-row">
-                    <span>Usa Chat di Gioco</span>
-                    <label class="switch">
-                        <input type="checkbox" id="use-chat-checkbox" checked>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
             <div class="button-group"> <button id="btn-create-lobby" class="btn btn-primary">Crea Lobby</button> <button id="btn-join-lobby" class="btn btn-secondary">Unisciti</button> </div>
         </section>
 
@@ -91,6 +72,7 @@
             <button id="btn-start-game" class="btn btn-primary">Avvia Partita!</button>
         </section>
 
+        <!-- Interfaccia di gioco semplificata con chat persistente -->
         <section id="game-screen" class="screen">
             <div class="game-top">
                 <div id="game-player-grid"></div>
@@ -102,23 +84,21 @@
             </div>
             <div id="clues-area"><div id="clues-container"></div></div>
             <div class="game-bottom button-group">
-                 <!-- MODIFICATO: Cambiato l'ID per maggiore chiarezza -->
-                 <div class="card" id="turn-actions-card" style="width: 100%; max-width: 320px;">
-                    <h2 id="turn-indicator-text">È il turno di...</h2>
-                    <input type="text" id="clue-input" placeholder="Scrivi un indizio..." style="display: none;">
-                    <button id="btn-submit-clue" class="btn btn-secondary" style="display: none;">Invia Indizio</button>
+                 <div id="chat-input-area" class="card" style="width: 100%; max-width: 380px; padding: 10px;">
+                    <input type="text" id="clue-input" placeholder="Scrivi un indizio...">
+                    <button id="btn-submit-clue" class="btn btn-secondary" style="width: auto; padding: 10px 20px; font-size: 1.2rem;">Invia</button>
                  </div>
-                 <button id="btn-pass-turn" class="btn btn-secondary" style="display:none;">Passa il Turno</button>
                  <button id="btn-call-vote" class="btn btn-primary">Chiama la Votazione</button>
                  <button id="btn-impostor-guess" class="btn btn-danger" style="display:none">🚨 Tenta la Sorte! 🚨</button>
             </div>
         </section>
     </div>
     
+    <!-- Modals -->
     <div id="join-modal" class="modal"><div class="modal-content"><h2>Unisciti a una Lobby</h2><input type="text" id="join-code-input" placeholder="INSERISCI CODICE" maxlength="4" style="text-transform:uppercase"><div class="button-group"><button id="btn-confirm-join" class="btn btn-primary">Entra!</button><button class="btn-close-modal btn-secondary">Annulla</button></div></div></div>
     <div id="vote-modal" class="modal"><div class="modal-content"><h2>🚨 È ORA DI VOTARE! 🚨</h2><p>Chi pensi sia l'Impostore?</p><div id="vote-grid"></div></div></div>
     <div id="impostor-guess-modal" class="modal"><div class="modal-content"><h2>Tenta il tutto per tutto!</h2><p>Scrivi la parola che pensi sia quella segreta. Se indovini, vinci! Altrimenti...</p><input type="text" id="impostor-guess-input" placeholder="La parola segreta è..."><div class="button-group"><button id="btn-confirm-guess" class="btn btn-danger">Conferma Ipotesi!</button><button class="btn-close-modal btn-secondary">Ci ho ripensato</button></div></div></div>
-    <div id="game-over-modal" class="modal"><div class="modal-content"><h2 id="game-over-title">PARTITA FINITA!</h2><div id="ejected-player-card" class="player-card" style="margin:20px auto;max-width:120px"></div><p id="game-over-reason" style="font-size:1.5rem"></p><p>La parola era: <strong id="reveal-word" style="color:var(--accent-yellow)"></strong></p><h3 id="game-over-winner" style="font-size:2.5rem"></h3><button id="btn-play-again" class="btn btn-primary">Gioca Ancora</button><ins class="adsbygoogle" style="display:block; margin-top: 20px;" data-ad-client="ca-pub-7425121195660181" data-ad-slot="IL_TUO_ID_SLOT_QUI" data-ad-format="auto" data-full-width-responsive="true"></ins></div></div>
+    <div id="game-over-modal" class="modal"><div class="modal-content"><h2 id="game-over-title">PARTITA FINITA!</h2><div id="ejected-player-card" class="player-card" style="margin:20px auto;max-width:120px"></div><p id="game-over-reason" style="font-size:1.5rem"></p><p>La parola era: <strong id="reveal-word" style="color:var(--accent-yellow)"></strong></p><h3 id="game-over-winner" style="font-size:2.5rem"></h3><button id="btn-play-again" class="btn btn-primary">Gioca Ancora</button></div></div>
     
     <footer class="footer-credits">Creato con ❤️ da Checco</footer>
 
@@ -132,14 +112,17 @@
             soundFiles.forEach(name => sounds[name] = new Audio(`/sounds/${name}.mp3`));
             const playSound = (name) => sounds[name]?.play().catch(e => console.log("Audio play failed."));
 
+            // Riferimenti agli elementi UI
             const screens = document.querySelectorAll('.screen');
             const modals = document.querySelectorAll('.modal');
             const nicknameInput = document.getElementById('nickname');
             const avatarSelection = document.getElementById('avatar-selection');
             const btnCallVote = document.getElementById('btn-call-vote');
+            const chatInputArea = document.getElementById('chat-input-area');
+            const impostorGuessBtn = document.getElementById('btn-impostor-guess');
             
             const showScreen = (screenId) => { screens.forEach(s => s.classList.remove('active')); const screen = document.getElementById(screenId); if(screen) screen.classList.add('active'); };
-            const showModal = (modalId) => { const modal = document.getElementById(modalId); if(modal) modal.classList.add('active'); if (modalId === 'game-over-modal') { try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { console.error("AdSense error:", e); } } };
+            const showModal = (modalId) => { const modal = document.getElementById(modalId); if(modal) modal.classList.add('active'); };
             const hideModals = () => modals.forEach(m => m.classList.remove('active'));
 
             for (let i = 1; i <= 6; i++) {
@@ -148,27 +131,12 @@
                 avatarSelection.appendChild(img);
             }
 
-            function updateLobby(state) {
-                myState.lobbyCode = state.lobbyCode; myState.isHost = myState.id === state.hostId;
-                document.getElementById('lobby-code').textContent = state.lobbyCode;
-                document.getElementById('host-name').textContent = state.players.find(p => p.id === state.hostId)?.nickname || '...';
-                const playerGrid = document.getElementById('player-grid'); playerGrid.innerHTML = '';
-                state.players.forEach(p => { playerGrid.innerHTML += `<div class="player-card"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`; });
-                document.getElementById('btn-start-game').style.display = myState.isHost ? 'block' : 'none';
-                showScreen('lobby-screen');
-            }
-
-            // =================================================================
-            // FUNZIONE updateGame() CON LA LOGICA PER IL MESSAGGIO FINALE
-            // =================================================================
-            function updateGame(state) {
-                const turnPlayer = state.players[state.turnIndex];
-                
+            function updateChatUI(state) {
+                // Questa funzione si occupa solo di aggiornare l'interfaccia, senza logica di turno.
                 const gamePlayerGrid = document.getElementById('game-player-grid');
                 gamePlayerGrid.innerHTML = '';
-                state.players.forEach((p, index) => {
-                    const isTurn = index === state.turnIndex;
-                    gamePlayerGrid.innerHTML += `<div class="player-card ${isTurn ? 'is-turn' : ''}"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`;
+                state.players.forEach((p) => {
+                    gamePlayerGrid.innerHTML += `<div class="player-card"><img src="/images/${p.avatar}" class="avatar"><span class="nickname">${p.nickname}</span></div>`;
                 });
                 
                 const cluesContainer = document.getElementById('clues-container');
@@ -177,72 +145,38 @@
                     const player = state.players.find(p => p.id === clueData.playerId);
                     cluesContainer.innerHTML += `<div class="clue"><img src="/images/${player.avatar}" class="avatar"><span class="clue-word">${clueData.clue}</span></div>`;
                 });
-
-                // Elementi dell'interfaccia di turno
-                const turnActionsCard = document.getElementById('turn-actions-card');
-                const turnIndicatorText = document.getElementById('turn-indicator-text');
-                const clueInput = document.getElementById('clue-input');
-                const submitClueBtn = document.getElementById('btn-submit-clue');
-                const passTurnBtn = document.getElementById('btn-pass-turn');
-
-                const isMyTurn = myState.id === turnPlayer.id;
-                const allCluesGiven = state.clues.length >= state.players.length;
-
-                // Nascondiamo tutto di default per sicurezza
-                turnActionsCard.style.display = 'none';
-                passTurnBtn.style.display = 'none';
-                clueInput.style.display = 'none';
-                submitClueBtn.style.display = 'none';
-
-                if (allCluesGiven) {
-                    // CASO 1: Tutti hanno parlato. Mostra il messaggio per votare.
-                    turnActionsCard.style.display = 'block';
-                    turnIndicatorText.textContent = "Tutti hanno parlato! Ora votate!";
-                } else {
-                    // CASO 2: Il gioco è ancora in corso.
-                    if (state.settings.useChat) {
-                        const iHaveGivenClue = state.clues.some(c => c.playerId === myState.id);
-                        const canGiveClue = isMyTurn && !iHaveGivenClue;
-                        if(canGiveClue) {
-                            turnActionsCard.style.display = 'block';
-                            turnIndicatorText.textContent = "È il tuo turno!";
-                            clueInput.style.display = 'block';
-                            submitClueBtn.style.display = 'block';
-                            playSound('turn');
-                        }
-                    } else { // Modalità "dal vivo"
-                        if (isMyTurn) {
-                            passTurnBtn.style.display = 'block';
-                            playSound('turn');
-                        }
-                    }
-                }
             }
             
+            // Listener per creare la lobby (semplificato)
             document.getElementById('btn-create-lobby').addEventListener('click', () => { 
                 if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!');
-                const useChat = document.getElementById('use-chat-checkbox').checked;
-                socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar, settings: { useChat: useChat, numImpostors: 1 } }); 
+                socket.emit('createLobby', { nickname: nicknameInput.value.trim(), avatar: myState.avatar }); 
             });
 
             document.getElementById('btn-join-lobby').addEventListener('click', () => { if (!nicknameInput.value.trim()) return alert('Devi inserire un nickname!'); showModal('join-modal'); });
             document.getElementById('btn-confirm-join').addEventListener('click', () => { const code = document.getElementById('join-code-input').value.trim().toUpperCase(); if (code.length === 4) { socket.emit('joinLobby', { lobbyCode: code, nickname: nicknameInput.value.trim(), avatar: myState.avatar }); } });
             document.querySelectorAll('.btn-close-modal').forEach(btn => btn.onclick = hideModals);
             document.getElementById('btn-start-game').addEventListener('click', () => socket.emit('startGame', { lobbyCode: myState.lobbyCode }));
+            
+            // Listener per inviare un messaggio in chat
             document.getElementById('btn-submit-clue').addEventListener('click', () => {
                 const clueInput = document.getElementById('clue-input'); const clue = clueInput.value.trim();
                 if (myState.secretWord && clue.toLowerCase().includes(myState.secretWord.toLowerCase())) { return alert("Non puoi scrivere la parola segreta come indizio!"); }
                 if (clue) { socket.emit('submitClue', { lobbyCode: myState.lobbyCode, clue }); clueInput.value = ''; }
             });
-            document.getElementById('btn-pass-turn').addEventListener('click', () => { socket.emit('passTurn', { lobbyCode: myState.lobbyCode }); });
+
             btnCallVote.addEventListener('click', () => socket.emit('callVote', { lobbyCode: myState.lobbyCode }));
             document.getElementById('btn-play-again').addEventListener('click', () => socket.emit('playAgain', { lobbyCode: myState.lobbyCode }));
-            document.getElementById('btn-impostor-guess').addEventListener('click', () => showModal('impostor-guess-modal'));
+            impostorGuessBtn.addEventListener('click', () => showModal('impostor-guess-modal'));
             document.getElementById('btn-confirm-guess').addEventListener('click', () => { const guess = document.getElementById('impostor-guess-input').value.trim(); if(guess){ socket.emit('impostorGuess', { lobbyCode: myState.lobbyCode, guess }); } });
+            
+            // GESTIONE DEGLI EVENTI SOCKET
             socket.on('connect', () => { myState.id = socket.id; });
-            socket.on('lobbyUpdate', (state) => { if (state.gameState === 'waiting') { playSound('join'); updateLobby(state); hideModals(); } });
+            socket.on('lobbyUpdate', (state) => { if (state.gameState === 'waiting') { playSound('join'); updateChatUI(state); hideModals(); showScreen('lobby-screen'); } });
+            
             socket.on('gameStarted', ({ role, word }) => {
-                playSound('start'); myState.secretWord = word || '';
+                playSound('start');
+                myState.secretWord = word || '';
                 const wordCardLabel = document.getElementById('word-card-label');
                 const secretWordEl = document.getElementById('secret-word');
                 const impostorInstructions = document.getElementById('impostor-instructions');
@@ -251,13 +185,23 @@
                 } else {
                     wordCardLabel.textContent = "La tua parola segreta è:"; secretWordEl.textContent = word; secretWordEl.style.color = 'var(--accent-yellow)'; impostorInstructions.style.display = 'none';
                 }
+                // Mostra i controlli di gioco
+                chatInputArea.style.display = 'flex';
                 btnCallVote.style.display = 'block';
-                document.getElementById('btn-impostor-guess').style.display = (role === 'impostor') ? 'block' : 'none';
+                impostorGuessBtn.style.display = (role === 'impostor') ? 'block' : 'none';
                 showScreen('game-screen');
             });
-            socket.on('turnUpdate', (state) => updateGame(state));
+
+            // Unico evento per aggiornare la chat
+            socket.on('chatUpdate', (state) => updateChatUI(state));
+
             socket.on('startVoting', (state) => {
-                playSound('vote'); btnCallVote.style.display = 'none';
+                playSound('vote');
+                // Nasconde i controlli della chat
+                chatInputArea.style.display = 'none';
+                btnCallVote.style.display = 'none';
+                impostorGuessBtn.style.display = 'none';
+                
                 const voteGrid = document.getElementById('vote-grid'); voteGrid.innerHTML = '';
                 state.players.forEach(p => {
                     const card = document.createElement('div'); card.className = 'player-card';
@@ -271,15 +215,18 @@
                 });
                 showModal('vote-modal');
             });
+
             socket.on('gameOver', ({ ejectedPlayer, result, word }) => {
                 result.winner === 'Innocenti' ? playSound('win') : playSound('lose');
-                document.getElementById('ejected-player-card').innerHTML = `<img src="/images/${ejectedPlayer.avatar}" class="avatar"><span class="nickname">${ejectedPlayer.nickname}</span>`;
+                const ejectedPlayerCard = document.getElementById('ejected-player-card');
+                ejectedPlayerCard.innerHTML = ejectedPlayer ? `<img src="/images/${ejectedPlayer.avatar}" class="avatar"><span class="nickname">${ejectedPlayer.nickname}</span>` : '';
                 document.getElementById('game-over-reason').textContent = result.reason;
                 document.getElementById('reveal-word').textContent = word;
                 document.getElementById('game-over-winner').textContent = `VINCONO GLI ${result.winner.toUpperCase()}!`;
                 document.getElementById('btn-play-again').style.display = myState.isHost ? 'block' : 'none';
                 hideModals(); showModal('game-over-modal');
             });
+            
             socket.on('errorMsg', ({ title, message }) => alert(`${title}\n${message}`));
             
             showScreen('home-screen');
